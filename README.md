@@ -77,7 +77,7 @@ AITerminal 是一款革命性的智能终端助手，它将强大的 SSH 客户�
 直接向 AI 提问，获取技术解答、操作建议或代码片段。
 
 ```
-用户输入: "如何查看Linux系统内存使用情况？"
+用户输入: "如何查看Linux系统内存使用情况？"(下图这一句输太快了，没录上)
 AI回复: "您可以使用 `free -h` 命令来查看 Linux 系统的内存使用情况。..."
 ```
 ![AI Chat](https://github.com/Amo-Zeng/AITerminal/blob/main/assets/ai-chat.gif?raw=true)
@@ -117,7 +117,7 @@ AITerminal 的主界面简洁直观，SSH 连接配置一目了然。
 ![主界面](https://github.com/Amo-Zeng/AITerminal/blob/main/assets/ssh-connect.gif?raw=true)
 
 ### AI 回复分屏显示
-AI 回复支持实时流式输出，并在独立的分屏区域显示，支持 Markdown、代码高亮和数学公式渲染。
+AI 回复支持实时流式输出，并在独立的分屏区域显示，支持 Markdown、代码高亮和数学公式渲染（看起来公式渲染改坏了，待修）。
 ![AI Streaming](https://github.com/Amo-Zeng/AITerminal/blob/main/assets/ai-streaming.gif?raw=true)
 
 ### 终端主题定制
