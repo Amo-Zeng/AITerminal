@@ -9,15 +9,13 @@
 [![Windows](https://img.shields.io/badge/Platform-Windows-blue.svg)](https://github.com/Amo-Zeng/AITerminal/releases)
 [![Version](https://img.shields.io/badge/Version-1.0.0-green.svg)](https://github.com/Amo-Zeng/AITerminal/releases)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Downloads](https://img.shields.io/github/downloads/Amo-Zeng/AITerminal/total.svg)](./AITerminal Setup 1.0.0.exe)
+[![Downloads](https://img.shields.io/github/downloads/Amo-Zeng/AITerminal/total.svg)](https://github.com/Amo-Zeng/AITerminal/releases)
 
 </div>
 
 ## 📖 项目简介
 
 AITerminal 是一款革命性的智能终端助手，它将强大的 SSH 客户端与先进的 AI 助手功能无缝集成。通过直观的界面和自然语言处理能力，AITerminal 旨在提升您的工作效率，简化复杂的命令行操作，并提供前所未有的交互体验。
-
-**目前 AITerminal 暂不开放源代码，仅提供 Windows 安装包。未来随着项目的发展和社区的壮大，我们计划逐步开源。**
 
 ### ✨ 核心特性
 
@@ -48,7 +46,7 @@ AITerminal 是一款革命性的智能终端助手，它将强大的 SSH 客户�
 - 直观的连接管理
 - 文件拖拽上传
 - 远程文件浏览 (`rfe`)
-- 远程文件点击下载 (`myls`)
+- 远程文件点击打开 (`myls`)
 
 </td>
 <td width="25%">
@@ -107,6 +105,11 @@ AI转换: find . -type f -size +100M
 
 ![Remote File Explorer](https://github.com/Amo-Zeng/AITerminal/blob/main/assets/rfe.gif?raw=true)
 
+
+通过 `myls` 命令直观地列出远程文件系统，点击即可下载并打开文件,可以一键看服务器上的图片。
+
+![Remote File Explorer](https://github.com/Amo-Zeng/AITerminal/blob/main/assets/myls.gif?raw=true)
+
 ## 🖼️ 软件截图
 
 ### 主界面与 SSH 连接
@@ -126,7 +129,7 @@ AI 回复支持实时流式输出，并在独立的分屏区域显示，支持 M
 ### 安装步骤
 
 1. **下载安装包**
-   ![点击下载安装包](./AITerminal Setup 1.0.0.exe)
+   [点击下载安装包](https://github.com/Amo-Zeng/AITerminal/releases/download/v1.0.0/AITerminal.Setup.1.0.0.exe)
 
 2. **运行安装程序**
    - 双击 `AITerminal-Setup.exe`
