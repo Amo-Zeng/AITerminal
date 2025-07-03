@@ -2,62 +2,71 @@
 
 <div align="center">
 
-![AITerminal Logo](https://via.placeholder.com/200x200/4A90E2/FFFFFF?text=AI+Terminal)
+![AITerminal Logo](./logo.svg)
 
-**智能终端助手 - 让命令行操作更简单**
+**AI 驱动的智能终端 - 让命令行操作更简单、更智能！**
 
 [![Windows](https://img.shields.io/badge/Platform-Windows-blue.svg)](https://github.com/Amo-Zeng/AITerminal/releases)
 [![Version](https://img.shields.io/badge/Version-1.0.0-green.svg)](https://github.com/Amo-Zeng/AITerminal/releases)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Downloads](https://img.shields.io/github/downloads/Amo-Zeng/AITerminal/total.svg)](https://github.com/Amo-Zeng/AITerminal/releases)
+[![Downloads](https://img.shields.io/github/downloads/Amo-Zeng/AITerminal/total.svg)](./AITerminal Setup 1.0.0.exe)
 
 </div>
 
 ## 📖 项目简介
 
-AITerminal 是一款革命性的智能终端助手，它将人工智能技术与传统命令行操作完美结合。通过自然语言处理，用户可以用简单的中文描述来执行复杂的系统操作，大大降低了命令行的使用门槛。
+AITerminal 是一款革命性的智能终端助手，它将强大的 SSH 客户端与先进的 AI 助手功能无缝集成。通过直观的界面和自然语言处理能力，AITerminal 旨在提升您的工作效率，简化复杂的命令行操作，并提供前所未有的交互体验。
+
+**目前 AITerminal 暂不开放源代码，仅提供 Windows 安装包。未来随着项目的发展和社区的壮大，我们计划逐步开源。**
 
 ### ✨ 核心特性
 
-- 🤖 **AI 驱动**: 基于先进的自然语言处理技术
-- 🗣️ **自然交互**: 支持中文自然语言命令输入
-- ⚡ **智能转换**: 自动将自然语言转换为系统命令
-- 🛡️ **安全可靠**: 内置安全检查机制，防止危险操作
-- 🎨 **现代界面**: 简洁美观的用户界面设计
-- 📚 **学习能力**: 持续学习用户习惯，提供个性化建议
+- 🤖 **AI 驱动**: 内置强大的 AI 助手，支持智能问答、错误诊断、自然语言转命令等。
+- 🔗 **SSH 客户端**: 提供稳定高效的 SSH 连接，支持文件传输、远程文件管理。
+- 🗣️ **自然交互**: 支持中文自然语言命令输入，降低命令行使用门槛。
+- ⚡ **智能转换**: AI 自动将自然语言转换为系统命令，并可直接执行。
+- 🎨 **现代界面**: 简洁美观的用户界面设计，支持多种主题和字体定制。
+- 🛡️ **安全可靠**: 内置安全检查机制，保障操作安全。
+- 📚 **学习能力**: 持续优化 AI 模型，提供更准确、个性化的建议。
 
 ## 🎯 主要功能
 
 <table>
 <tr>
-<td width="50%">
+<td width="25%">
 
-### 🔧 系统管理
-- 文件和文件夹操作
-- 进程管理
-- 系统信息查询
-- 网络配置管理
-
-### 📁 文件操作
-- 智能文件搜索
-- 批量文件处理
-- 文件权限管理
-- 压缩解压操作
+### 🤖 AI 智能助手
+- 智能问答与建议
+- 错误诊断与修复
+- 自然语言转命令
+- 系统分析与优化
 
 </td>
-<td width="50%">
+<td width="25%">
+   
+### 🔗 SSH 客户端
+- 直观的连接管理
+- 文件拖拽上传
+- 远程文件浏览 (`rfe`)
+- 远程文件点击下载 (`myls`)
 
-### 🌐 网络工具
-- 网络连接测试
-- 端口扫描
-- DNS查询
-- 网络配置
+</td>
+<td width="25%">
 
-### 🔍 系统监控
-- 性能监控
-- 日志分析
-- 资源使用统计
-- 错误诊断
+### ⚙️ 高度可定制
+- 终端主题与字体
+- AI 模型与 API 配置
+- 光标样式与滚动行数
+- 自动登录与执行命令
+
+</td>
+<td width="25%">
+   
+### 🚀 效率工具
+- 快捷键支持
+- 会话保存与加载
+- 流式 AI 回复
+- AI 回复分屏显示
 
 </td>
 </tr>
@@ -65,60 +74,59 @@ AITerminal 是一款革命性的智能终端助手，它将人工智能技术与
 
 ## 💡 使用示例
 
-### 基础操作
+### AI 智能问答与建议
+
+直接向 AI 提问，获取技术解答、操作建议或代码片段。
 
 ```
-用户输入: "显示当前目录下的所有文件"
-AI转换: dir
-执行结果: [文件列表显示]
+用户输入: "如何查看Linux系统内存使用情况？"
+AI回复: "您可以使用 `free -h` 命令来查看 Linux 系统的内存使用情况。..."
 ```
+![AI Chat](https://github.com/Amo-Zeng/AITerminal/blob/main/assets/ai-chat.gif?raw=true)
+
+### 自然语言转命令
+
+将您的需求用自然语言描述，AI 会自动生成相应的 Linux 命令，并可直接执行。
 
 ```
-用户输入: "创建一个名为project的文件夹"
-AI转换: mkdir project
-执行结果: 文件夹创建成功
-```
-
-### 高级功能
-
-```
-用户输入: "查找所有大于100MB的文件"
-AI转换: forfiles /m *.* /c "cmd /c if @fsize gtr 104857600 echo @path @fsize"
+用户输入: "cmd 查找所有大于100MB的文件"
+AI转换: find . -type f -size +100M
 执行结果: [大文件列表]
 ```
+![AI Cmd](https://github.com/Amo-Zeng/AITerminal/blob/main/assets/ai-cmd.gif?raw=true)
 
-```
-用户输入: "备份Documents文件夹到D盘"
-AI转换: xcopy "%USERPROFILE%\Documents" "D:\Backup\Documents" /E /I /Y
-执行结果: 备份完成
-```
+### 文件拖拽上传
+
+直接将本地文件拖拽到终端窗口，即可快速上传到远程服务器。
+
+![Drag and Drop Upload](https://github.com/Amo-Zeng/AITerminal/blob/main/assets/drag-upload.gif?raw=true)
+
+### 远程文件浏览与下载
+
+通过 `rfe` 命令直观地浏览远程文件系统，点击即可下载文件或进入目录。
+
+![Remote File Explorer](https://github.com/Amo-Zeng/AITerminal/blob/main/assets/rfe.gif?raw=true)
 
 ## 🖼️ 软件截图
 
-### 主界面
-![主界面](https://via.placeholder.com/800x500/F5F5F5/333333?text=AITerminal+主界面)
+### 主界面与 SSH 连接
+AITerminal 的主界面简洁直观，SSH 连接配置一目了然。
+![主界面](https://github.com/Amo-Zeng/AITerminal/blob/main/assets/ssh-connect.gif?raw=true)
 
-### 智能命令转换
-![命令转换](https://via.placeholder.com/800x400/E8F4FD/2196F3?text=自然语言+→+系统命令)
+### AI 回复分屏显示
+AI 回复支持实时流式输出，并在独立的分屏区域显示，支持 Markdown、代码高亮和数学公式渲染。
+![AI Streaming](https://github.com/Amo-Zeng/AITerminal/blob/main/assets/ai-streaming.gif?raw=true)
 
-### 执行结果展示
-![执行结果](https://via.placeholder.com/800x400/E8F5E8/4CAF50?text=命令执行结果展示)
+### 终端主题定制
+多种内置终端主题，满足您的个性化需求。
+![终端主题](https://github.com/Amo-Zeng/AITerminal/blob/main/assets/terminal-themes.gif?raw=true)
 
 ## 🚀 快速开始
-
-### 系统要求
-
-- **操作系统**: Windows 10/11 (64位)
-- **内存**: 至少 4GB RAM
-- **存储空间**: 100MB 可用空间
-- **网络**: 需要互联网连接（用于AI功能）
 
 ### 安装步骤
 
 1. **下载安装包**
-   ```
-   前往 Releases 页面下载最新版本的安装包
-   ```
+   ![点击下载安装包](./AITerminal Setup 1.0.0.exe)
 
 2. **运行安装程序**
    - 双击 `AITerminal-Setup.exe`
@@ -126,25 +134,27 @@ AI转换: xcopy "%USERPROFILE%\Documents" "D:\Backup\Documents" /E /I /Y
 
 3. **启动应用**
    - 从开始菜单或桌面快捷方式启动 AITerminal
-   - 首次运行需要进行简单的初始化设置
+   - 首次运行建议进行 SSH 和 AI 配置
 
 ## 📋 更新日志
 
-### v1.0.0 (2024-01-XX)
+### v1.0.0 (2025-07-03)
 - 🎉 首次发布
-- ✅ 基础AI命令转换功能
-- ✅ 现代化用户界面
+- ✅ 基础 AI 命令转换功能
+- ✅ 强大的 SSH 连接管理
+- ✅ 文件拖拽上传与远程文件浏览
+- ✅ 现代化用户界面与主题定制
 - ✅ 安全检查机制
 - ✅ 中文自然语言支持
 
 ## 🔮 未来规划
 
 - 🌟 **开源计划**: 项目壮大后将逐步开源
-- 🔧 **功能扩展**: 支持更多系统操作和工具
-- 🌍 **多语言支持**: 增加英语等其他语言支持
-- 📱 **跨平台**: 计划支持 macOS 和 Linux
-- 🤖 **AI增强**: 持续优化AI模型，提高识别准确率
-- 🔌 **插件系统**: 支持第三方插件扩展
+- 🔧 **功能扩展**: 支持更多系统操作和工具，如 SFTP 客户端、端口转发等。
+- 🌍 **多语言支持**: 增加英语等其他语言支持。
+- 📱 **跨平台**: 计划支持 macOS 和 Linux。
+- 🤖 **AI增强**: 持续优化 AI 模型，提高识别准确率和回复质量。
+- 🔌 **插件系统**: 支持第三方插件扩展，丰富功能生态。
 
 ## 🤝 反馈与支持
 
@@ -152,8 +162,8 @@ AI转换: xcopy "%USERPROFILE%\Documents" "D:\Backup\Documents" /E /I /Y
 
 ### 📞 联系方式
 - **Issues**: [GitHub Issues](https://github.com/Amo-Zeng/AITerminal/issues)
-- **Email**: support@aiterminal.com
-- **QQ群**: 123456789
+- **Email**: 1019191262@qq.com
+- **QQ群**: 1053768305
 
 ### 🐛 问题报告
 如果您遇到任何问题，请通过以下方式报告：
