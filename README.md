@@ -7,7 +7,7 @@
 **AI 驱动的智能终端 - 让命令行操作更简单、更智能！**
 
 [![Windows](https://img.shields.io/badge/Platform-Windows-blue.svg)](https://github.com/Amo-Zeng/AITerminal/releases)
-[![Linux](https://img.shields.io/badge/Platform-Linux-orange.svg)](https://github.com/Amo-Zeng/AITerminal/releases)
+[![Linux](https://img.shields.io/badge/Platform-Linux-orange.svg)](https://github.com/Amo-Zeng/AITerminal/releases)<!-- [![macOS](https://img.shields.io/badge/Platform-macOS-lightgrey.svg)](https://github.com/Amo-Zeng/AITerminal/releases) -->
 [![Version](https://img.shields.io/badge/Version-1.0.0-green.svg)](https://github.com/Amo-Zeng/AITerminal/releases)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/Amo-Zeng/AITerminal/total.svg)](https://github.com/Amo-Zeng/AITerminal/releases)
@@ -148,6 +148,9 @@ AI 回复支持实时流式输出，并在独立的分屏区域显示，支持 M
 
 2. **双击运行程序**
    - 双击 `AITerminal-1.0.0.AppImage`打开软件，直接使用
+     
+## mac系统
+   - 待编译
 
 ## 📋 更新日志
 
