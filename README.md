@@ -7,6 +7,7 @@
 **AI 驱动的智能终端 - 让命令行操作更简单、更智能！**
 
 [![Windows](https://img.shields.io/badge/Platform-Windows-blue.svg)](https://github.com/Amo-Zeng/AITerminal/releases)
+[![Linux](https://img.shields.io/badge/Platform-Linux-orange.svg)](https://github.com/Amo-Zeng/AITerminal/releases)
 [![Version](https://img.shields.io/badge/Version-1.0.0-green.svg)](https://github.com/Amo-Zeng/AITerminal/releases)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/Amo-Zeng/AITerminal/total.svg)](https://github.com/Amo-Zeng/AITerminal/releases)
@@ -128,16 +129,25 @@ AI 回复支持实时流式输出，并在独立的分屏区域显示，支持 M
 
 ### 安装步骤
 
+## windows系统
+
 1. **下载安装包**
    [点击下载安装包](https://github.com/Amo-Zeng/AITerminal/releases/download/v1.0.0/AITerminal.Setup.1.0.0.exe)
 
 2. **运行安装程序**
-   - 双击 `AITerminal-Setup.exe`
+   - 双击 `AITerminal.Setup.1.0.0.exe`
    - 按照安装向导完成安装
 
 3. **启动应用**
    - 从开始菜单或桌面快捷方式启动 AITerminal
    - 首次运行建议进行 SSH 和 AI 配置
+     
+## linux系统
+1. **下载安装包**
+   [点击下载安装包](https://github.com/Amo-Zeng/AITerminal/releases/download/v1.0.0/AITerminal-1.0.0.AppImage)
+
+2. **双击运行程序**
+   - 双击 `AITerminal-1.0.0.AppImage`打开软件，直接使用
 
 ## 📋 更新日志
 
