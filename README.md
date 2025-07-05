@@ -7,7 +7,8 @@
 **AI 驱动的智能终端 - 让命令行操作更简单、更智能！**
 
 [![Windows](https://img.shields.io/badge/Platform-Windows-blue.svg)](https://github.com/Amo-Zeng/AITerminal/releases)
-[![Linux](https://img.shields.io/badge/Platform-Linux-orange.svg)](https://github.com/Amo-Zeng/AITerminal/releases)<!-- [![macOS](https://img.shields.io/badge/Platform-macOS-lightgrey.svg)](https://github.com/Amo-Zeng/AITerminal/releases) -->
+[![Linux](https://img.shields.io/badge/Platform-Linux-orange.svg)](https://github.com/Amo-Zeng/AITerminal/releases)
+[![macOS](https://img.shields.io/badge/Platform-macOS-lightgrey.svg)](https://github.com/Amo-Zeng/AITerminal/releases) 
 [![Version](https://img.shields.io/badge/Version-1.0.0-green.svg)](https://github.com/Amo-Zeng/AITerminal/releases)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/Amo-Zeng/AITerminal/total.svg)](https://github.com/Amo-Zeng/AITerminal/releases)
@@ -16,7 +17,7 @@
 
 ## 📖 项目简介
 
-AITerminal 是一款革命性的智能终端助手，它将强大的 SSH 客户端与先进的 AI 助手功能无缝集成。通过直观的界面和自然语言处理能力，AITerminal 旨在提升您的工作效率，简化复杂的命令行操作，并提供前所未有的交互体验。
+AITerminal 是一款革命性的多平台（windows, linux, mac）智能终端助手，它将强大的 SSH 客户端与先进的 AI 助手功能无缝集成。通过直观的界面和自然语言处理能力，AITerminal 旨在提升您的工作效率，简化复杂的命令行操作，并提供前所未有的交互体验。
 
 ### ✨ 核心特性
 
@@ -150,7 +151,8 @@ AI 回复支持实时流式输出，并在独立的分屏区域显示，支持 M
    - 双击 `AITerminal-1.0.0.AppImage`打开软件，直接使用
      
 ## mac系统
-   - 待编译
+   -  [点击下载安装包](https://github.com/Amo-Zeng/AITerminal/releases/download/v1.0.0/AITerminal-1.0.0-arm64.dmg)
+   -  使用方法请自行探索，我也没用过
 
 ## 📋 更新日志
 
