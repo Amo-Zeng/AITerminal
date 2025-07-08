@@ -133,7 +133,7 @@ AI 回复支持实时流式输出，并在独立的分屏区域显示，支持 M
 ## windows系统
 
 1. **下载安装包**
-   [点击下载安装包](https://github.com/Amo-Zeng/AITerminal/releases/download/v1.0.0/AITerminal.Setup.1.0.0.exe)
+   [点击下载安装包](https://github.com/Amo-Zeng/AITerminal/releases/download/v1.1.0/AITerminal.Setup.1.1.0.exe)
 
 2. **运行安装程序**
    - 双击 `AITerminal.Setup.1.0.0.exe`
@@ -145,17 +145,33 @@ AI 回复支持实时流式输出，并在独立的分屏区域显示，支持 M
      
 ## linux系统
 1. **下载安装包**
-   [点击下载安装包](https://github.com/Amo-Zeng/AITerminal/releases/download/v1.0.0/AITerminal-1.0.0.AppImage)
+   [点击下载安装包](https://github.com/Amo-Zeng/AITerminal/releases/download/v1.1.0/AITerminal-1.1.0.AppImage)
 
 2. **双击运行程序**
-   - 双击 `AITerminal-1.0.0.AppImage`打开软件，直接使用
+   - 双击 `AITerminal-1.1.0.AppImage`打开软件，直接使用
      
 ## mac系统
-   -  [点击下载安装包](https://github.com/Amo-Zeng/AITerminal/releases/download/v1.0.0/AITerminal-1.0.0-arm64.dmg)
-   -  使用方法请自行探索，我也没用过
+   -  [点击下载安装包](https://github.com/Amo-Zeng/AITerminal/releases/download/v1.1.0/AITerminal-1.1.0-arm64.dmg)
+   -  sudo xattr -r -d com.apple.quarantine /Applications/AITerminal.app  (根据佬友反馈：mac 安装需要执行这个命令。显示已损坏是正常的，用以上命令或拖到Sentinel里？)
 
 ## 📋 更新日志
+### v1.1.0 (2025.7.8)
 
+#### 🐞 Bug 修复
+- 修复 Mac 下无法复制粘贴的问题
+- 修复模型名选择和输入框之间的 bug
+- `api_url` 兼容 `https://api.openai.com` 和 `https://api.openai.com/v1/chat/completions`
+- 修复未登录 SSH 无法更改其它配置的问题
+- 暗黑模式下边框未变暗的问题已修复
+- 支持公式渲染
+
+#### 🚀 新增&增强功能
+- 支持密钥登录 SSH
+- 可设置常用 bash 命令，输入 `/` 快捷调出并一键发送
+- 支持显示完整的多轮对话历史
+- AI 回答可附加自定义要求（如“请简短回答”等）
+- 增加send命令，用于向远程发送bash命令（如send ls）
+---
 ### v1.0.0 (2025-07-03)
 - 🎉 首次发布
 - ✅ 基础 AI 命令转换功能
