@@ -155,7 +155,7 @@ AI 回复支持实时流式输出，并在独立的分屏区域显示，支持 M
      
 ## mac系统
    -  [点击下载安装包](https://github.com/Amo-Zeng/AITerminal/releases/download/v1.1.0/AITerminal-1.1.0-arm64.dmg)
-   -  sudo xattr -r -d com.apple.quarantine /Applications/AITerminal.app  (根据佬友反馈：mac 安装需要执行这个命令。显示已损坏是正常的，用以上命令或拖到Sentinel里？)
+   -  sudo xattr -r -d com.apple.quarantine /Applications/AITerminal.app  (显示已损坏是正常的，根据[佬友lorsque](https://github.com/lorsque-sir)反馈：mac 安装需要执行这个命令。佬友Jasonvip则是通过将软件拖到Sentinel里解决。)
 
 ## 📋 更新日志
 ### v1.1.0 (2025.7.8)
