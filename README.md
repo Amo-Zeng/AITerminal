@@ -136,7 +136,7 @@ AI 回复支持实时流式输出，并在独立的分屏区域显示，支持 M
 ## windows系统
 
 1. **下载安装包**
-   [点击下载安装包](https://github.com/Amo-Zeng/AITerminal/releases/download/v1.1.0/AITerminal.Setup.1.1.0.exe)
+   [点击下载安装包](https://github.com/Amo-Zeng/AITerminal/releases/download/v1.2.0/AITerminal.Setup.1.1.0.exe)
 
 2. **运行安装程序**
    - 双击 `AITerminal.Setup.1.0.0.exe`
@@ -148,13 +148,13 @@ AI 回复支持实时流式输出，并在独立的分屏区域显示，支持 M
      
 ## linux系统
 1. **下载安装包**
-   [点击下载安装包](https://github.com/Amo-Zeng/AITerminal/releases/download/v1.1.0/AITerminal-1.1.0.AppImage)
+   [点击下载安装包](https://github.com/Amo-Zeng/AITerminal/releases/download/v1.2.0/AITerminal-1.1.0.AppImage)
 
 2. **双击运行程序**
    - 双击 `AITerminal-1.1.0.AppImage`打开软件，直接使用
      
 ## mac系统
-   -  [点击下载安装包](https://github.com/Amo-Zeng/AITerminal/releases/download/v1.1.0/AITerminal-1.1.0-arm64.dmg)
+   -  [点击下载安装包](https://github.com/Amo-Zeng/AITerminal/releases/download/v1.2.0/AITerminal-1.1.0-arm64.dmg)
    -  sudo xattr -r -d com.apple.quarantine /Applications/AITerminal.app  (显示已损坏是正常的，根据[佬友lorsque](https://github.com/lorsque-sir)反馈：mac 安装需要执行这个命令。佬友Jasonvip则是通过将软件拖到Sentinel里解决。)
 
 ## 📋 更新日志
