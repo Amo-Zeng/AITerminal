@@ -78,9 +78,9 @@ AITerminal 是一款革命性的多平台（windows, linux, mac）智能终端�
 ### AI 接管模式 
  此模式下AI可以根据用户命令自主在当前终端路径下进行项目开发，原生bash支持，且内置多种函数，支持api请求失败重试、打断、压缩上下文、不间断多次修改等功能。
  ```
-用户输入: "创建一个介绍广义相对论的炫酷网页",点击AI接管，AI开始自主创建炫酷网页（不局限于开发网页）。完成后可多次让AI追加修改。 
+用户输入: "创建一个介绍广义相对论的炫酷网页",点击AI接管，AI开始自主创建炫酷网页（不局限于开发网页）。下图为2倍速播放。完成后可多次让AI追加修改。 
  ```
-![AI Chat](https://github.com/Amo-Zeng/AITerminal/blob/main/assets/agent.gif?raw=true)
+![AI Chat](https://github.com/Amo-Zeng/AITerminal/blob/main/assets/agent_2x.gif?raw=true)
  
 ### AI 智能问答与建议
 
