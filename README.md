@@ -35,6 +35,7 @@ AITerminal 是一款革命性的多平台（windows, linux, mac）智能终端�
 <table>
 <tr>
 <td width="50%">
+   
 ### 🤖 AI 接管模式
 - AI自动开发项目
    
