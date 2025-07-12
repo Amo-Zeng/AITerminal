@@ -34,16 +34,15 @@ AITerminal 是一款革命性的多平台（windows, linux, mac）智能终端�
 
 <table>
 <tr>
-<td width="25%">
-
+<td width="50%">
+### 🤖 AI 接管模式
+- AI自动开发项目
+   
 ### 🤖 AI 智能助手
 - 智能问答与建议
 - 错误诊断与修复
 - 自然语言转命令
 - 系统分析与优化
-
-</td>
-<td width="25%">
    
 ### 🔗 SSH 客户端
 - 直观的连接管理
@@ -54,7 +53,7 @@ AITerminal 是一款革命性的多平台（windows, linux, mac）智能终端�
 - 远程文件点击打开 (`myls`)
 
 </td>
-<td width="25%">
+<td width="50%">
 
 ### ⚙️ 高度可定制
 - 终端主题与字体
@@ -62,9 +61,6 @@ AITerminal 是一款革命性的多平台（windows, linux, mac）智能终端�
 - AI提示词定制
 - 光标样式与滚动行数
 - 自动登录与执行命令
-
-</td>
-<td width="25%">
    
 ### 🚀 效率工具
 - 快捷键支持
@@ -78,6 +74,13 @@ AITerminal 是一款革命性的多平台（windows, linux, mac）智能终端�
 
 ## 💡 使用示例
 
+### AI 接管模式 
+ 此模式下AI可以根据用户命令自主在当前终端路径下进行项目开发，原生bash支持，且内置多种函数，支持api请求失败重试、打断、压缩上下文、不间断多次修改等功能。
+ ```
+用户输入: "创建一个介绍广义相对论的炫酷网页",点击AI接管，AI开始自主创建炫酷网页（不局限于开发网页）。完成后可多次让AI追加修改。 
+ ```
+![AI Chat](https://github.com/Amo-Zeng/AITerminal/blob/main/assets/agent.gif?raw=true)
+ 
 ### AI 智能问答与建议
 
 直接向 AI 提问，获取技术解答、操作建议或代码片段。
