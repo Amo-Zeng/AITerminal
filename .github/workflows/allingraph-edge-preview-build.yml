@@ -1,0 +1,99 @@
+name: Temporary AllInGraph Edge preview build
+
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/allingraph-edge-preview-build.yml]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temporary-allingraph-edge-preview-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x64
+            os: ubuntu-24.04
+            platform: linux
+            arch: x64
+            target: ''
+            bundle_dir: clients/desktop/src-tauri/target/release/bundle
+          - name: windows-x64
+            os: windows-2025
+            platform: windows
+            arch: x64
+            target: ''
+            bundle_dir: clients/desktop/src-tauri/target/release/bundle
+          - name: macos-universal
+            os: macos-14
+            platform: macos
+            arch: universal
+            target: universal-apple-darwin
+            bundle_dir: clients/desktop/src-tauri/target/universal-apple-darwin/release/bundle
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: edge-build-temp
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: clients/desktop/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: clients/desktop/src-tauri
+
+      - name: Install universal macOS Rust targets
+        if: runner.os == 'macOS'
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+
+      - name: Install Linux native dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            libxdo-dev libssl-dev librsvg2-dev patchelf
+
+      - name: Install desktop dependencies
+        run: npm ci --ignore-scripts --prefix clients/desktop
+
+      - name: Build native unsigned installers
+        shell: bash
+        env:
+          EDGE_BUILD_TARGET: ${{ matrix.target }}
+        run: |
+          args=(--ci --no-sign)
+          if [[ -n "$EDGE_BUILD_TARGET" ]]; then args+=(--target "$EDGE_BUILD_TARGET"); fi
+          npm run tauri:build --prefix clients/desktop -- "${args[@]}"
+
+      - name: Normalize names and hashes
+        shell: bash
+        run: |
+          node scripts/package-edge-installers.mjs \
+            --platform "${{ matrix.platform }}" \
+            --arch "${{ matrix.arch }}" \
+            --version 0.1.0 \
+            --bundle-dir "${{ matrix.bundle_dir }}" \
+            --out-dir edge-artifacts
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: allingraph-edge-${{ matrix.name }}
+          path: edge-artifacts/*
+          if-no-files-found: error
+          retention-days: 3
