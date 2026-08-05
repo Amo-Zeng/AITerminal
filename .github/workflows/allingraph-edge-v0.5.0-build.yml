@@ -7,7 +7,7 @@ on:
 
 concurrency:
   group: temporary-allingraph-edge-v0.5.0-build
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -52,7 +52,7 @@ jobs:
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          KEY_BRANCH: edge-key-v0.5.0-${{ matrix.name }}
+          KEY_BRANCH: edge-key-v0.5.0-${{ matrix.name }}-${{ github.run_id }}
         run: |
           set -euo pipefail
           node key-exchange.mjs \
@@ -84,7 +84,7 @@ jobs:
       - name: Receive the wrapped source key
         shell: bash
         env:
-          WRAPPED_KEY_BRANCH: edge-wrapped-v0.5.0-${{ matrix.name }}
+          WRAPPED_KEY_BRANCH: edge-wrapped-v0.5.0-${{ matrix.name }}-${{ github.run_id }}
         run: |
           set -euo pipefail
           found=0
