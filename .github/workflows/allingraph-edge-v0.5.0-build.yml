@@ -1,8 +1,9 @@
 name: Temporary AllInGraph Edge 0.5.0 encrypted build
 
 on:
-  repository_dispatch:
-    types: [build-allingraph-edge-v0-5-0]
+  push:
+    branches: [main]
+    paths: [.github/workflows/allingraph-edge-v0.5.0-build.yml]
 
 concurrency:
   group: temporary-allingraph-edge-v0.5.0-build
@@ -12,29 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  validate-request:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    steps:
-      - name: Validate immutable build request
-        shell: bash
-        env:
-          RELEASE_VERSION: ${{ github.event.client_payload.release_version }}
-          SOURCE_COMMIT: ${{ github.event.client_payload.source_commit }}
-          SOURCE_SHA256: ${{ github.event.client_payload.source_sha256 }}
-          SOURCE_KEY: ${{ github.event.client_payload.source_key }}
-        run: |
-          set -euo pipefail
-          set +x
-          echo "::add-mask::$SOURCE_KEY"
-          [[ "$GITHUB_ACTOR" == "Amo-Zeng" ]]
-          [[ "$RELEASE_VERSION" == "0.5.0" ]]
-          [[ "$SOURCE_COMMIT" =~ ^[a-f0-9]{40}$ ]]
-          [[ "$SOURCE_SHA256" =~ ^[a-f0-9]{64}$ ]]
-          [[ "$SOURCE_KEY" =~ ^[a-f0-9]{64}$ ]]
-
   build:
-    needs: validate-request
     strategy:
       fail-fast: false
       matrix:
@@ -63,25 +42,77 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     permissions:
-      contents: read
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.client_payload.source_commit }}
-          persist-credentials: false
+          ref: edge-build-v0.5.0
+
+      - name: Publish an ephemeral source-key wrapping public key
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          KEY_BRANCH: edge-key-v0.5.0-${{ matrix.name }}
+        run: |
+          set -euo pipefail
+          node key-exchange.mjs \
+            --generate \
+            --public "$RUNNER_TEMP/source-key-public.pem" \
+            --private "$RUNNER_TEMP/source-key-private.pem"
+          exchange="$RUNNER_TEMP/key-publication"
+          rm -rf "$exchange"
+          mkdir "$exchange"
+          cp "$RUNNER_TEMP/source-key-public.pem" "$exchange/source-key-public.pem"
+          git -C "$exchange" init -b "$KEY_BRANCH"
+          git -C "$exchange" config user.name github-actions
+          git -C "$exchange" config user.email github-actions@github.com
+          git -C "$exchange" add source-key-public.pem
+          git -C "$exchange" commit -m "ci: publish ephemeral ${{ matrix.name }} wrapping key"
+          askpass="$RUNNER_TEMP/allingraph-git-askpass.sh"
+          printf '%s\n' \
+            '#!/usr/bin/env bash' \
+            'case "$1" in' \
+            '  *Username*) printf "%s\n" "x-access-token" ;;' \
+            '  *) printf "%s\n" "$GITHUB_TOKEN" ;;' \
+            'esac' > "$askpass"
+          chmod 700 "$askpass"
+          GIT_ASKPASS="$askpass" GIT_TERMINAL_PROMPT=0 \
+            git -C "$exchange" push --force \
+              https://github.com/Amo-Zeng/AITerminal.git \
+              "HEAD:refs/heads/$KEY_BRANCH"
+
+      - name: Receive the wrapped source key
+        shell: bash
+        env:
+          WRAPPED_KEY_BRANCH: edge-wrapped-v0.5.0-${{ matrix.name }}
+        run: |
+          set -euo pipefail
+          found=0
+          for attempt in $(seq 1 90); do
+            if git ls-remote --exit-code origin "refs/heads/$WRAPPED_KEY_BRANCH" >/dev/null 2>&1; then
+              git fetch --quiet --depth=1 origin "refs/heads/$WRAPPED_KEY_BRANCH"
+              git show FETCH_HEAD:wrapped-source-key.bin > "$RUNNER_TEMP/wrapped-source-key.bin"
+              found=1
+              break
+            fi
+            sleep 10
+          done
+          [[ "$found" == 1 ]]
+          node key-exchange.mjs \
+            --unwrap \
+            --private "$RUNNER_TEMP/source-key-private.pem" \
+            --input "$RUNNER_TEMP/wrapped-source-key.bin" \
+            --output "$RUNNER_TEMP/source-key.txt"
 
       - name: Authenticate and unpack source snapshot
         shell: bash
-        env:
-          SOURCE_KEY: ${{ github.event.client_payload.source_key }}
-          EXPECTED_SOURCE_SHA256: ${{ github.event.client_payload.source_sha256 }}
         run: |
           set -euo pipefail
           set +x
+          SOURCE_KEY="$(tr -d '\r\n' < "$RUNNER_TEMP/source-key.txt")"
           echo "::add-mask::$SOURCE_KEY"
-          actual_sha256="$(node decrypt-source.mjs --sha256 edge-source-v0.5.0.tar.gz.aesgcm)"
-          [[ "$actual_sha256" == "$EXPECTED_SOURCE_SHA256" ]]
-          node decrypt-source.mjs \
+          [[ "$SOURCE_KEY" =~ ^[a-f0-9]{64}$ ]]
+          SOURCE_KEY="$SOURCE_KEY" node decrypt-source.mjs \
             --input edge-source-v0.5.0.tar.gz.aesgcm \
             --output edge-source-v0.5.0.tar.gz
           mkdir source
@@ -89,6 +120,11 @@ jobs:
           rm -f edge-source-v0.5.0.tar.gz
           node verify-source-manifest.mjs source
           unset SOURCE_KEY
+          rm -f \
+            "$RUNNER_TEMP/source-key.txt" \
+            "$RUNNER_TEMP/source-key-private.pem" \
+            "$RUNNER_TEMP/source-key-public.pem" \
+            "$RUNNER_TEMP/wrapped-source-key.bin"
 
       - name: Verify release version
         shell: bash
@@ -163,7 +199,7 @@ jobs:
           retention-days: 3
 
   publish:
-    needs: [validate-request, build]
+    needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -172,7 +208,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.client_payload.source_commit }}
+          ref: edge-build-v0.5.0
           persist-credentials: false
 
       - uses: actions/setup-node@v4
