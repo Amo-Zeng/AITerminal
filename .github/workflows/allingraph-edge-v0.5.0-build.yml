@@ -1,0 +1,229 @@
+name: Temporary AllInGraph Edge 0.5.0 encrypted build
+
+on:
+  repository_dispatch:
+    types: [build-allingraph-edge-v0-5-0]
+
+concurrency:
+  group: temporary-allingraph-edge-v0.5.0-build
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  validate-request:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Validate immutable build request
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ github.event.client_payload.release_version }}
+          SOURCE_COMMIT: ${{ github.event.client_payload.source_commit }}
+          SOURCE_SHA256: ${{ github.event.client_payload.source_sha256 }}
+          SOURCE_KEY: ${{ github.event.client_payload.source_key }}
+        run: |
+          set -euo pipefail
+          set +x
+          echo "::add-mask::$SOURCE_KEY"
+          [[ "$GITHUB_ACTOR" == "Amo-Zeng" ]]
+          [[ "$RELEASE_VERSION" == "0.5.0" ]]
+          [[ "$SOURCE_COMMIT" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$SOURCE_SHA256" =~ ^[a-f0-9]{64}$ ]]
+          [[ "$SOURCE_KEY" =~ ^[a-f0-9]{64}$ ]]
+
+  build:
+    needs: validate-request
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x64
+            os: ubuntu-24.04
+            platform: linux
+            arch: x64
+            target: ''
+            binary_path: source/clients/desktop/src-tauri/target/release/allingraph-edge
+            bundle_dir: source/clients/desktop/src-tauri/target/release/bundle
+          - name: windows-x64
+            os: windows-2025
+            platform: windows
+            arch: x64
+            target: ''
+            binary_path: source/clients/desktop/src-tauri/target/release/allingraph-edge.exe
+            bundle_dir: source/clients/desktop/src-tauri/target/release/bundle
+          - name: macos-universal
+            os: macos-14
+            platform: macos
+            arch: universal
+            target: universal-apple-darwin
+            binary_path: source/clients/desktop/src-tauri/target/universal-apple-darwin/release/allingraph-edge
+            bundle_dir: source/clients/desktop/src-tauri/target/universal-apple-darwin/release/bundle
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.client_payload.source_commit }}
+          persist-credentials: false
+
+      - name: Authenticate and unpack source snapshot
+        shell: bash
+        env:
+          SOURCE_KEY: ${{ github.event.client_payload.source_key }}
+          EXPECTED_SOURCE_SHA256: ${{ github.event.client_payload.source_sha256 }}
+        run: |
+          set -euo pipefail
+          set +x
+          echo "::add-mask::$SOURCE_KEY"
+          actual_sha256="$(node decrypt-source.mjs --sha256 edge-source-v0.5.0.tar.gz.aesgcm)"
+          [[ "$actual_sha256" == "$EXPECTED_SOURCE_SHA256" ]]
+          node decrypt-source.mjs \
+            --input edge-source-v0.5.0.tar.gz.aesgcm \
+            --output edge-source-v0.5.0.tar.gz
+          mkdir source
+          tar -xzf edge-source-v0.5.0.tar.gz -C source
+          rm -f edge-source-v0.5.0.tar.gz
+          node verify-source-manifest.mjs source
+          unset SOURCE_KEY
+
+      - name: Verify release version
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm_version="$(node -p "require('./source/clients/desktop/package.json').version")"
+          tauri_version="$(node -p "require('./source/clients/desktop/src-tauri/tauri.conf.json').version")"
+          cargo_version="$(sed -n 's/^version = "\([^"]*\)"/\1/p' source/clients/desktop/src-tauri/Cargo.toml | head -n1)"
+          [[ "$npm_version" == "0.5.0" && "$tauri_version" == "$npm_version" && "$cargo_version" == "$npm_version" ]]
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: source/clients/desktop/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install universal macOS Rust targets
+        if: runner.os == 'macOS'
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+
+      - name: Install Linux native dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            libxdo-dev \
+            libssl-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Install desktop dependencies
+        run: npm ci --ignore-scripts --prefix source/clients/desktop
+
+      - name: Build native unsigned installers
+        shell: bash
+        env:
+          EDGE_BUILD_TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          args=(--ci --no-sign)
+          if [[ -n "$EDGE_BUILD_TARGET" ]]; then args+=(--target "$EDGE_BUILD_TARGET"); fi
+          npm run tauri:build --prefix source/clients/desktop -- "${args[@]}"
+
+      - name: Verify native Local Harness
+        shell: bash
+        run: >-
+          node source/scripts/test-edge-native-cli.mjs
+          --binary "${{ matrix.binary_path }}"
+          --version 0.5.0
+
+      - name: Normalize names and verify installer hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          node source/scripts/package-edge-installers.mjs \
+            --platform "${{ matrix.platform }}" \
+            --arch "${{ matrix.arch }}" \
+            --version 0.5.0 \
+            --bundle-dir "${{ matrix.bundle_dir }}" \
+            --out-dir edge-artifacts
+          rm -rf source
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: allingraph-edge-${{ matrix.name }}
+          path: edge-artifacts/*
+          if-no-files-found: error
+          retention-days: 3
+
+  publish:
+    needs: [validate-request, build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.client_payload.source_commit }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: allingraph-edge-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Revalidate complete release and build checksum manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          node build-edge-release-manifest.mjs \
+            --input-dir release-assets \
+            --output release-assets/edge-manifest.json \
+            --sums-output release-assets/SHA256SUMS.txt \
+            --version 0.5.0 \
+            --tag edge-v0.5.0 \
+            --channel preview \
+            --base-url https://github.com/Amo-Zeng/AITerminal/releases/download/edge-v0.5.0
+          node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            const manifest = JSON.parse(readFileSync("release-assets/edge-manifest.json", "utf8"));
+            const actual = manifest.artifacts.map(({ platform, arch, format }) => `${platform}:${arch}:${format}`).sort();
+            const expected = ["linux:x64:AppImage", "linux:x64:deb", "linux:x64:rpm", "macos:universal:dmg", "windows:x64:exe", "windows:x64:msi"].sort();
+            if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(`incomplete release: ${actual.join(", ")}`);
+          '
+          (cd release-assets && sha256sum -c SHA256SUMS.txt)
+
+      - name: Publish unsigned preview release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: edge-v0.5.0
+          target_commitish: main
+          name: AllInGraph Edge 0.5.0 unsigned preview
+          body: |
+            Cross-platform preview installers built from the verified AllInGraph Edge 0.5.0 source snapshot.
+            These installers are not yet OS code-signed. Verify downloads with SHA256SUMS.txt.
+          prerelease: true
+          make_latest: false
+          fail_on_unmatched_files: true
+          files: |
+            release-assets/*.AppImage
+            release-assets/*.deb
+            release-assets/*.rpm
+            release-assets/*.msi
+            release-assets/*.exe
+            release-assets/*.dmg
+            release-assets/edge-manifest.json
+            release-assets/SHA256SUMS.txt
