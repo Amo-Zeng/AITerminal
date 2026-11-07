@@ -54,7 +54,7 @@ AI follows the current tab's terminal environment. On Windows, the local termina
 
 ## Install
 
-Download an **AITerminal** package from [GitHub Releases](https://github.com/Amo-Zeng/AITerminal/releases) and verify the accompanying SHA-256 checksums. Version 1.5.1 contains this open-source update and Plugin API 1.1; older installers do not contain the latest plugins and program notifications.
+Download an **AITerminal** package from the [latest release](https://github.com/Amo-Zeng/AITerminal/releases/latest) and verify `SHA256SUMS.txt`. **1.6.0** includes Responses / Messages APIs, a shared terminal environment for AI execution, and automatic synchronization of verified installers to Releases.
 
 | Platform | Package | Requirements |
 | --- | --- | --- |
@@ -115,7 +115,7 @@ npm run build:linux
 npm run build:mac:unsigned
 ```
 
-The public [Actions workflow](https://github.com/Amo-Zeng/AITerminal/actions/workflows/windows-build.yml) builds all three platforms for pull requests, pushes to `main` / `release/**`, `v*` tags and manual runs. Fork owners can enable Actions in their repositories; no private build repository or model key is required. Checks include locked dependencies, tests, audits, real Electron/plugin/notification smoke tests, source-to-package verification and actual packaged startup. Artifacts include installers, checksums and an SBOM and expire after 14 days; use Releases for durable downloads.
+The public [Actions workflow](https://github.com/Amo-Zeng/AITerminal/actions/workflows/windows-build.yml) builds all three platforms for pull requests, pushes to `main` / `release/**`, `v*` tags and manual runs. Fork owners can enable Actions in their repositories; no private build repository or model key is required. Checks include locked dependencies, tests, audits, real Electron/plugin/notification smoke tests, source-to-package verification and actual packaged startup. Successful non-PR builds in the main repository automatically publish installers, checksums and platform SBOMs to Releases after verifying every upload. Actions artifacts expire after 14 days; use Releases for durable downloads.
 
 See [Contributing](CONTRIBUTING.md) for focused smoke tests and [Releasing](RELEASING.md) for the optional maintainer build helper.
 

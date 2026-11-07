@@ -4,6 +4,9 @@ All notable changes to AITerminal will be documented here.
 
 ## Unreleased
 
+## 1.6.0 - 2026-11-07
+
+- Publish verified Windows, Linux and macOS installers to GitHub Releases automatically after every successful trusted build. Stage uploads in a draft, verify all assets, and then update the latest download. Preserve published version tags and prevent older source builds from replacing newer downloads.
 - Added OpenAI Responses and Anthropic Messages adapters alongside Chat Completions, with selectable/automatic endpoint formats, provider authentication, JSON/SSE responses, correlated multi-tool continuation and per-tab cancellation. Switching provider URLs clears the previous provider's key; the settings field now masks keys.
 - Unified visible local terminals, AI takeover, interactive programs and plugin execution around the same captured terminal environment. Windows uses WSL Ubuntu throughout; local takeover starts from the visible shell's directory and rejects replaced backends.
 - Added local-environment PTY smoke tests covering cwd, Unicode, AI commands, plugin files, interactive input and resize. Windows package verification now checks the shared environment module.

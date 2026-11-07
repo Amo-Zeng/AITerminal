@@ -10,15 +10,19 @@
 
 每个平台上传一个带源码提交 SHA 的 artifact，包含安装包、`SHA256SUMS.txt` 和 `sbom.cdx.json`，保留 14 天。CI 无需模型 Key、SSH 凭据或真实 Webhook。PR 工作流只持有只读仓库权限，不向第三方贡献暴露发布秘密。
 
-## 维护者发布正式版本
+## 构建后自动同步下载页
 
-1. 更新 `package.json`、lockfile 根版本、CHANGELOG 和受影响的兼容性文档；保留原 Logo 与许可证。
-2. 推送源码，等待同一提交的三平台检查全部通过。不要将一个平台成功当成全部成功。
-3. 获取该提交的三个 artifact，验证 GitHub artifact 摘要及包内 SHA-256；保留各平台 SBOM。检查安装包版本和架构。
-4. 在目标系统进行适用的人工安装/交互验证，说明未验证范围；Windows 特别关注 WSL Ubuntu，macOS 说明未签名状态。
-5. 将版本标签指向已验证的源码提交，创建 GitHub Release，上传安装包、合并后的校验和与各平台 SBOM，写明源码和 Actions 链接。不要用未经验证的旧包替代。
+维护者正常更新版本、提交并 `git push`，三平台成功后工作流会自动执行 `Publish verified installers`。该阶段使用 GitHub 自动提供的 `GITHUB_TOKEN`，无需另存个人 Key。只有 `Amo-Zeng/AITerminal` 的非 PR 构建可以发布；PR、Fork 和私有打包库仍只构建，发布阶段之外的任务保持只读仓库权限。
 
-当前 workflow 只构建和上传 Actions artifact，**不会自动创建 Release**，避免 PR 或普通 push 意外发布正式版本。
+1. `package.json` 与 lockfile 使用相同版本，CHANGELOG 记录本次变化；新功能发布前更新版本，并保留原 Logo 与许可证。
+2. 三个平台全部通过后，从**当前工作流、同一提交**下载 artifact。验证三个安装包名称/版本、SHA-256 与各平台 SBOM 身份，缺少任一平台就停止发布。
+3. 创建 Release 草稿，上传安装包、各平台 SBOM、合并的 `SHA256SUMS.txt` 和 `release-provenance.json`。再次核对 GitHub 上每个附件的大小、摘要与上传状态。
+4. 全部上传完成才公开 Release 并更新 `/releases/latest`。任一上传失败会保留草稿，旧下载继续可用；在 Actions 重跑失败的发布任务即可续传。
+5. 已发布附件与标签不覆盖。版本第一次发布使用 `v<version>`；普通构建若沿用已发布版本，会创建 `v<version>-build.<run_number>` 并显示构建号，避免新构建无法同步下载。正式版本更新仍应递增 package 版本。推送显式 `v*` 标签时必须与 package 版本和源码一致。
+
+发布任务串行运行，并比较新旧源码的祖先关系：较旧或分叉的源码构建可保留独立下载，但不能把 Latest 倒退。正式发布记录包含源码 SHA 和 Actions 链接，`release-provenance.json` 记录安装包摘要。同一任务重跑会验证已有附件，不重复发布。
+
+在目标系统进行适用的人工安装/交互验证并记录范围；Windows 需验证 WSL Ubuntu，macOS 说明未签名状态。维护发布脚本时运行 `node --test test/publishRelease.test.js`，覆盖三平台完整性、摘要失败、上传中断续传、幂等重跑和旧构建不覆盖新下载。
 
 ## 原有私有打包脚本
 
@@ -37,6 +41,6 @@ npm run publish:github-build -- --repo YOUR_ACCOUNT/YOUR_REPO
 
 ## English summary
 
-The public workflow builds Windows, Linux and macOS on ordinary pushes and PRs without maintainer secrets. The legacy filename `windows-build.yml` covers all three platforms. Actions artifacts expire after 14 days; durable releases are published by maintainers only after all platform checks pass and artifacts match the verified source commit.
+The public workflow builds Windows, Linux and macOS on ordinary pushes and PRs without maintainer secrets. The legacy filename `windows-build.yml` covers all three platforms. In the main repository, successful non-PR builds automatically stage, verify and publish a GitHub Release using the built-in workflow token. All three builds must succeed; incomplete uploads remain drafts. Published tags/assets are immutable, repeated builds of the same package version get a build suffix, and older source builds cannot replace a newer Latest download. Actions artifacts expire after 14 days; Releases provide durable downloads.
 
 Fork contributors do not need the private build repository. The optional `publish:github-build` helper defaults to the maintainer's private repository; pass `--repo YOUR_ACCOUNT/YOUR_REPO` for your own repository. Keep tokens in environment variables, never in remote URLs or files. See the [contribution guide](CONTRIBUTING.md) for development checks.

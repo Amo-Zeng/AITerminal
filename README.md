@@ -54,7 +54,7 @@ AI 跟随当前标签的终端环境：Windows 默认本地终端是 **WSL Ubunt
 
 ## 安装与开始使用
 
-从 [GitHub Releases](https://github.com/Amo-Zeng/AITerminal/releases) 下载对应平台的 **AITerminal** 安装包，核对该版本附带的 `SHA256SUMS`。1.5.1 对应本次开源及 Plugin API 1.1；旧版安装包不包含最新插件和程序通知。
+从 [最新版本下载页](https://github.com/Amo-Zeng/AITerminal/releases/latest) 下载对应平台的 **AITerminal** 安装包，核对该版本附带的 `SHA256SUMS.txt`。**1.6.0** 包含 Responses / Messages API、AI 与终端环境统一，以及自动同步 Releases 的发布流程。
 
 | 平台 | 安装包 | 运行条件 |
 | --- | --- | --- |
@@ -115,7 +115,7 @@ npm run build:linux
 npm run build:mac:unsigned
 ```
 
-公开 [GitHub Actions](https://github.com/Amo-Zeng/AITerminal/actions/workflows/windows-build.yml) 在 PR、普通 `push` 到 `main` / `release/**`、`v*` 标签和手动触发时运行三平台构建。Fork 开发者可以在自己的仓库启用 Actions；构建无需维护者私有仓库或模型 Key。每个平台执行锁定安装、测试、依赖审计、真实 Electron/插件/通知检查、打包源码一致性及打包后启动，再上传安装包、校验和与 SBOM。Actions 临时产物保留 14 天，正式下载使用 Releases。
+公开 [GitHub Actions](https://github.com/Amo-Zeng/AITerminal/actions/workflows/windows-build.yml) 在 PR、普通 `push` 到 `main` / `release/**`、`v*` 标签和手动触发时运行三平台构建。Fork 开发者可以在自己的仓库启用 Actions；构建无需维护者私有仓库或模型 Key。每个平台执行锁定安装、测试、依赖审计、真实 Electron/插件/通知检查、打包源码一致性及打包后启动，再上传安装包、校验和与 SBOM。主仓库的非 PR 构建在三平台全部通过后自动同步 Releases；附件上传校验齐全后才更新下载页。Actions 临时产物保留 14 天，正式下载使用 Releases。
 
 按改动范围运行真实交互测试，命令与环境要求见 [贡献指南](CONTRIBUTING.md)。维护者原有私有打包脚本仍保留，使用说明移至 [构建与发布](RELEASING.md)。
 
