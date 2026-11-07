@@ -33,6 +33,7 @@ The template declares the `hello` tool, its input schema, the `greeting` panel a
 
 | Goal | Example |
 | --- | --- |
+| Session state with revision-conflict retry, per tab (offline, English guide) | [Tab Notes](examples/tab-notes/) |
 | Offline panels, events and per-tab session state | [Terminal Pet](plugins/terminal-pet/) and [Ops Quest](plugins/ops-quest/) |
 | Validated parameters and interactive terminal sessions | [Docker Workbench](plugins/docker-tools/) |
 | Task events and host-managed Webhook delivery | [Task Notifier](plugins/task-notifier/) |
