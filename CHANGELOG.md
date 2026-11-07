@@ -8,6 +8,8 @@ All notable changes to AITerminal will be documented here.
 
 - Published the current desktop application and plugin host source under Apache-2.0 in the public AITerminal repository, preserving the original logo and existing public history.
 - Added bilingual project and contribution documentation, an English plugin quickstart, a community roadmap, plugin/bug/feature issue forms and a pull request template. Public CI builds all three desktop platforms without private repository access or model credentials.
+- Fixed the real Git plugin fixture on Windows by isolating Git configuration in an empty regular file; Git for Windows cannot read Node's device-null path as a configuration file.
+- Fixed Windows PowerShell plugin execution mixing CLIXML progress into command output and collapsing native failure exit codes; added real Windows output/exit regressions.
 
 - Added program-stop Webhooks for managed local/SSH commands, interactive PTYs and plugin execution, plus a “Run and notify” button for manual interactive programs. Reports success, failure, cancellation or unknown remote state without duplicating close events.
 - Added per-source terminal keyword matching with incremental UTF-8/ANSI handling, case sensitivity, bounded buffers, cooldowns and opt-in redacted excerpts; settings are editable in the Webhook page.

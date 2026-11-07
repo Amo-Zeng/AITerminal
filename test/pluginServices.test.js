@@ -23,6 +23,15 @@ test('real local commands preserve Unicode and literal argument text', { skip: p
     const result = await service({}, 'terminal.exec', { argv: ['printf', '%s', text] }, task);
     assert.equal(result.output, text); assert.equal(result.exitCode, 0);
 });
+test('Windows PowerShell keeps plain UTF-8 output and native exit status', { skip: process.platform !== 'win32' }, async () => {
+    const { service, task } = fixture({ binding: { shell: 'powershell' } });
+    const text = await service({}, 'terminal.exec', { command: "Write-Progress -Activity 'fixture progress' -Status 'working'; Write-Output '中文输出'" }, task);
+    assert.equal(text.output.trim(), '中文输出'); assert.equal(text.exitCode, 0);
+    const native = await service({}, 'terminal.exec', { argv: ['cmd.exe', '/d', '/c', 'exit', '7'] }, task);
+    assert.equal(native.exitCode, 7); assert.equal(native.output, '');
+    const error = await service({}, 'terminal.exec', { command: "Write-Error 'fixture failure'" }, task);
+    assert.equal(error.exitCode, 1); assert.match(error.output, /fixture failure/); assert.doesNotMatch(error.output, /CLIXML|<Objs/);
+});
 test('cancelling a running process rejects promptly and stops its owned process group', { skip: process.platform === 'win32' }, async () => {
     const { service, task, controller } = fixture();
     const promise = service({}, 'terminal.exec', { argv: ['sleep', '30'] }, task);

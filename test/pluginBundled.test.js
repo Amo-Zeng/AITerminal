@@ -25,8 +25,13 @@ function fixture(t, ids, service) {
     return { root, manager, runtime, first, second, capture, invoke };
 }
 function git(directory, args) {
+    // Git for Windows does not accept Node's \\.\nul device path as a
+    // configuration file. Keep the fixture isolated with a real empty file
+    // outside the repository, on every platform.
+    const config = path.join(path.dirname(directory), 'empty.gitconfig');
+    fs.writeFileSync(config, '');
     const result = spawnSync('git', ['-c', 'commit.gpgsign=false', '-c', `core.hooksPath=${path.join(directory, 'no-hooks')}`, '-C', directory, ...args], {
-        encoding: 'utf8', env: { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: os.devNull, GIT_AUTHOR_NAME: 'Fixture', GIT_AUTHOR_EMAIL: 'fixture@example.invalid', GIT_COMMITTER_NAME: 'Fixture', GIT_COMMITTER_EMAIL: 'fixture@example.invalid' }
+        encoding: 'utf8', env: { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: config, GIT_AUTHOR_NAME: 'Fixture', GIT_AUTHOR_EMAIL: 'fixture@example.invalid', GIT_COMMITTER_NAME: 'Fixture', GIT_COMMITTER_EMAIL: 'fixture@example.invalid' }
     });
     assert.equal(result.status, 0, result.error?.message || result.stderr); return result.stdout;
 }

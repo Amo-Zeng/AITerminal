@@ -1,8 +1,14 @@
 # 插件框架实施与验证
 
-版本：1.5.0，2026-11-07。实施目标与验收标准见 [架构方案](PLUGIN_ARCHITECTURE.md)。
+版本：1.5.1，2026-11-07。实施目标与验收标准见 [架构方案](PLUGIN_ARCHITECTURE.md)。
 
-## 趣味插件增量（未发布）
+## 公开源码与跨平台验证
+
+当前插件源码和 API 1.1 已在公开仓库发布。本地完整回归 143 项通过。首轮 [公开 CI](https://github.com/Amo-Zeng/AITerminal/actions/runs/42339308414) 的 Windows Git 回归在测试仓库初始化时发现 Node 的 `os.devNull` 设备路径不能作为 Git 配置文件；改为测试临时目录中的真实空配置文件，仍隔离用户配置，不跳过 Windows Git 测试。最终安装包及对应成功 CI 以 [公开 Release](https://github.com/Amo-Zeng/AITerminal/releases) 的记录为准。
+
+进一步在本机 Windows PowerShell 5.1 + Windows Node/Git 复现了 `EncodedCommand` 将进度与错误输出序列化为 CLIXML、污染 Git 结果的问题。执行服务改用单个 Unicode `Command` 参数，设置 UTF-8、关闭进度流并保留原生非零退出码。真实 Windows 的 Git 时间线（中文、特殊路径、空仓库、游离 HEAD、模型数据边界）及 PowerShell 输出/退出码/错误文本两项回归全部通过；Linux 插件 5 项与执行/通知 21 项通过，另 1 项 Windows 专用测试按平台跳过。
+
+## 趣味插件本地验证记录
 
 目标：内置可直接试玩的终端宠物、运维闯关和 Git 时光机，保持标签隔离，离线玩法无需模型，Git 只读且故事请求不具备工具执行能力。验收还包括插件宿主回收后进度保留、重复计分防护、真实 Git 与真实 Electron 界面。
 
@@ -17,7 +23,7 @@
 - 界面截图已检查：`release/bundled-plugins-verification/{terminal-pet,ops-quest,git-time-machine}.png`。结果面板按清单顺序显示在工具表单上方。
 - 本地 Linux 产物 `release/bundled-plugins-verified/linux-unpacked/aiterminal` 构建成功，48 个运行文件与源码逐字节一致；实际 ASAR 中 renderer、PTY、Cordis 插件宿主启动与退出通过，闯关完成后重启插件进程仍保留 10 分。日志副本位于 `release/bundled-plugins-verification/`。
 
-当前验证环境是 WSL/Linux，Windows/macOS 未针对这次增量重新运行 CI；Windows 的真实 PowerShell Git 回归已纳入现有 `npm test`，不将本地 Linux 结果声称为 Windows 实测。原三平台安装包仍是下文记录的历史构建，**不包含这次新插件**。宠物与闯关进度仅在应用会话内保留，停用/更新/关闭标签或退出应用会清空。
+此阶段验证环境是 WSL/Linux；Windows 的真实 PowerShell Git 回归已纳入 `npm test`，不将本地 Linux 结果声称为 Windows 实测。下文 1.5.0 私有构建是历史记录，**不包含这次新插件**；公开 1.5.1 进度见上方。宠物与闯关进度仅在应用会话内保留，停用/更新/关闭标签或退出应用会清空。
 
 ## 已实施
 
