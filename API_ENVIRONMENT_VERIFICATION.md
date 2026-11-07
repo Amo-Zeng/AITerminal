@@ -13,7 +13,7 @@
 
 | 检查 | 结果 |
 | --- | --- |
-| `npm test` | 163 项：162 通过、1 项按平台跳过、0 失败；随后新增的凭据隔离用例与接管用例共 4 项通过 |
+| `npm test` | 163 项：162 通过、1 项按平台跳过、0 失败；随后新增的凭据隔离用例与接管用例共 5 项通过 |
 | `npm run smoke:ai-protocols` | 真实 Electron 渲染器 → IPC → 本机 HTTP 服务，三种格式均返回解析后的文本 |
 | `npm run smoke:config-modal` | 格式选择、保存、恢复、连接测试传参，以及原 Webhook 控件通过 |
 | `npm run smoke:plugin-runtime` | 真实 Electron/Cordis：标签隔离、模型插件、宠物事件、闯关 UI、Git 时间线与清理通过 |
@@ -27,6 +27,8 @@
 Windows 本机验证使用 Windows Node/ConPTY 启动真实 WSL；Linux 验证使用 Electron。macOS 的 `/private/tmp` 路径别名已纳入 smoke 判定；macOS 与完整安装包验证由三平台 GitHub Actions 执行，不能用 Linux 结果代替。
 
 首轮三平台 CI 的 Linux/macOS 构建通过；Windows 插件 smoke 暴露旧测试错误地假定没有活动 WSL 后端也能读取终端上下文。本地以立即退出的 Shell 复现后，测试改为显式验证后端关闭时拒绝读取/执行，而配置、模型插件和离线宠物/闯关继续工作；没有放宽产品的目标绑定检查。可用 `npm run smoke:plugin-runtime -- --without-terminal` 单独复现无后端检查。
+
+最终源码 `23c65b86f5f180f62bbbefe9d6bb1e85e826f095` 的 [三平台构建 #42358378738](https://github.com/Amo-Zeng/AITerminal/actions/runs/42358378738) 已全部成功：Windows x64、Linux x64、macOS arm64。包含测试、API IPC、插件/通知检查、打包源码一致性和安装包启动校验。安装包从该 Actions 运行的 Artifacts 下载；此更新尚未替换已有 `v1.5.1` Release 的正式下载附件。
 
 ## 社区 PR
 
