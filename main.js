@@ -45,6 +45,8 @@ const { parsePluginCall, parsePluginToolCall } = require('./lib/pluginManifest')
 const { PluginRuntime } = require('./lib/pluginRuntime');
 const { createPluginServices } = require('./lib/pluginServices');
 const { requestChat, cancelAiRequests } = require('./lib/aiClient');
+const { normalizeApiFormat } = require('./lib/aiProtocol');
+const { createLocalEnvironment, terminalLaunch, commandSpec, terminalDirectory, executeInEnvironment } = require('./lib/localEnvironment');
 const { quotePosix, wrapDirectCommand } = require('./lib/shellCommand');
 let pluginManager;
 let pluginRuntime;
@@ -64,12 +66,18 @@ function capturePluginBinding(owner, options = {}) {
         const connection = owner.sshConnection, stream = owner.sshStream;
         return { target: 'remote', shell: 'posix', cwd: owner.currentWorkingDirectory, connection, backend: stream, valid: () => validOwner() && !!connection && owner.sshConnection === connection && owner.sshStream === stream };
     }
+    // MCP stdio servers are explicitly configured host processes. Terminal/file
+    // services, including takeover tools, always use the tab's terminal system.
+    if (options.mode === 'host') return { target: 'local', shell: process.platform === 'win32' ? 'powershell' : 'posix', cwd: os.homedir(), valid: validOwner };
+    if (options.mode === 'takeover') {
+        const binding = owner.localTakeoverBinding;
+        return { ...binding, target: 'local', shell: binding?.environment?.shell || 'posix', cwd: owner.localWorkingDirectory,
+            valid: () => validOwner() && !!binding && owner.localTakeoverBinding === binding && binding.valid() };
+    }
     const session = getLocalTerminalMap(owner)?.get(owner.tabId);
-    const host = options.mode === 'takeover' || options.mode === 'host';
-    const directory = host ? owner.localWorkingDirectory || owner.localTakeoverInitialDir || os.homedir() : session?.cwd || os.homedir();
-    const wsl = !host && process.platform === 'win32' ? { file: process.env.AIT_TERMINAL_SHELL || 'wsl.exe', distro: process.env.AIT_TERMINAL_WSL_DISTRO || 'Ubuntu' } : null;
-    return { target: 'local', shell: host && process.platform === 'win32' ? 'powershell' : 'posix', cwd: wsl ? '~' : directory, wsl, backend: host ? owner.localTakeoverInitialDir : session,
-        valid: () => validOwner() && (host || (getLocalTerminalMap(owner)?.get(owner.tabId) === session && !owner.sshStream)) };
+    const valid = () => validOwner() && !!session?.active && getLocalTerminalMap(owner)?.get(owner.tabId) === session && !owner.sshStream;
+    return { target: 'local', shell: session?.environment?.shell || 'posix', cwd: session?.cwd, environment: session?.environment, backend: session, valid,
+        resolveCwd: () => terminalDirectory(session, null, valid) };
 }
 function getPluginRuntime() {
     if (pluginRuntime) return pluginRuntime;
@@ -164,6 +172,9 @@ function createTabConnectionInfo(tabId = 'tab-1') {
         // Local machine execution context (for local/hybrid AI takeover)
         localTakeoverInitialDir: null,
         localWorkingDirectory: null,
+        localTakeoverBinding: null,
+        localTerminalContext: null,
+        localCommandControllers: new Set(),
         lastLocalOutput: '',
         // Local interactive session (best-effort; prefers node-pty if installed)
         localInteractive: null,
@@ -222,6 +233,7 @@ function createDefaultAiConfig() {
     return {
         apiKey: null,
         baseUrl: 'https://api.openai.com',
+        apiFormat: 'auto',
         model: 'gpt-3.5-turbo',
         maxTokens: 1000,
         temperature: 0.7,
@@ -370,6 +382,7 @@ function validateAiConfig(config = aiConfig) {
         config.model = 'gpt-3.5-turbo';
     }
     config.baseUrl = normalizeConfiguredApiBaseUrl(config.baseUrl);
+    config.apiFormat = normalizeApiFormat(config.apiFormat);
     return config;
 }
 
@@ -379,13 +392,16 @@ function applyAiConfig(connectionInfo, input = {}, clearWhenDisabled = false) {
         config.apiKey = null;
         return config;
     }
-    const stored = loadStoredSecrets(input);
+    const nextBaseUrl = typeof input.aiBaseUrl === 'string' && input.aiBaseUrl.trim() ? input.aiBaseUrl.trim() : config.baseUrl;
+    if (apiSecretScope(nextBaseUrl) !== apiSecretScope(config.baseUrl)) config.apiKey = null;
+    const stored = loadStoredSecrets({ ...input, aiBaseUrl: nextBaseUrl });
     if (typeof input.aiApiKey === 'string' && input.aiApiKey.trim()) {
         config.apiKey = input.aiApiKey.trim();
     } else if (stored.ai?.apiKey) {
         config.apiKey = stored.ai.apiKey;
     }
     if (typeof input.aiBaseUrl === 'string' && input.aiBaseUrl.trim()) config.baseUrl = input.aiBaseUrl.trim();
+    config.apiFormat = normalizeApiFormat(input.aiApiFormat);
     if (typeof input.aiModel === 'string' && input.aiModel.trim()) config.model = input.aiModel.trim();
     const maxTokens = parseInt(input.aiMaxTokens, 10);
     if (Number.isFinite(maxTokens) && maxTokens > 0) config.maxTokens = maxTokens;
@@ -426,7 +442,7 @@ function clampText(value, maxLength = 200000) {
 function sanitizeIpcConfig(input = {}) {
     if (!input || typeof input !== 'object' || Array.isArray(input)) return {};
     const output = { ...input };
-    for (const key of ['host', 'username', 'privateKeyPath', 'aiBaseUrl', 'aiModel', 'aiCustomRequirements']) {
+    for (const key of ['host', 'username', 'privateKeyPath', 'aiBaseUrl', 'aiApiFormat', 'aiModel', 'aiCustomRequirements']) {
         if (output[key] !== undefined) output[key] = clampText(output[key], 4096).trim();
     }
     for (const key of ['password', 'passphrase', 'aiApiKey']) {
@@ -633,6 +649,7 @@ function disposeTabConnectionInfo(connectionInfo) {
     pluginRuntime?.dispose(connectionInfo);
     clearTimeout(connectionInfo.pluginChangeTimer);
     try { cancelAiRequests(connectionInfo); } catch {}
+    for (const controller of connectionInfo.localCommandControllers || []) controller.abort();
     try { stopAllLocalTerminalSessions(connectionInfo); } catch {}
     try { stopLocalInteractiveSession(connectionInfo); } catch {}
     try { clearReplContinueTimers(connectionInfo); } catch {}
@@ -1549,6 +1566,7 @@ function inferReplModeFromCommandLine(commandLine) {
 
 function cleanupLocalInteractiveState(connectionInfo) {
     if (!connectionInfo) return;
+    clearInterval(connectionInfo.localInteractive?.bindingGuard);
     connectionInfo.localInteractive = null;
 }
 
@@ -1579,24 +1597,14 @@ function startLocalInteractiveSession(connectionInfo, currentWindow, commandLine
     if (!ownsTabConnection(currentWindow, connectionInfo)) {
 	    return { success: false, error: '标签会话已关闭' };
     }
-    if (!connectionInfo?.localTakeoverInitialDir) {
-	    return { success: false, error: '未配置本地初始工作目录' };
-    }
-
-	const initialCwd = connectionInfo.localTakeoverInitialDir;
-	let cwd = connectionInfo.localWorkingDirectory || initialCwd;
-	try {
-	    cwd = path.resolve(expandLocalTilde(cwd));
-	    if (!fs.existsSync(cwd) || !fs.statSync(cwd).isDirectory()) cwd = initialCwd;
-	} catch {
-	    cwd = initialCwd;
-	}
-	connectionInfo.localWorkingDirectory = cwd;
+    const binding = connectionInfo.localTakeoverBinding;
+    if (!binding?.valid()) return { success: false, error: '本地终端已关闭或变化，请重新启动接管' };
+    const cwd = connectionInfo.localWorkingDirectory || connectionInfo.localTakeoverInitialDir;
 
     // Stop previous local interactive session if any.
     stopLocalInteractiveSession(connectionInfo);
 
-    const shellSpec = getLocalShellSpec();
+    const shellSpec = commandSpec(binding.environment, commandLine, cwd, { interactive: true });
     const pty = getNodePty();
     if (!pty) {
         const message = 'node-pty 未加载。本地交互式命令已拒绝启动，请在目标平台执行 npm ci 并重新打包。';
@@ -1615,6 +1623,7 @@ function startLocalInteractiveSession(connectionInfo, currentWindow, commandLine
     let exited = false;
     const onOut = (chunk) => {
         if (!connectionInfo.localInteractive || connectionInfo.localInteractive.id !== sessionId) return;
+        if (connectionInfo.localTakeoverBinding !== binding || !binding.valid()) { stopLocalInteractiveSession(connectionInfo); return; }
         const text = (chunk || '').toString();
         if (!text) return;
         observer.output(text);
@@ -1662,12 +1671,12 @@ function startLocalInteractiveSession(connectionInfo, currentWindow, commandLine
     if (pty) {
         try {
             const termName = 'xterm-256color';
-            const p = pty.spawn(shellSpec.file, [...shellSpec.argsPrefix, commandLine], {
+            const p = pty.spawn(shellSpec.file, shellSpec.args, {
                 name: termName,
                 cols: 120,
                 rows: 40,
-                cwd,
-                env: process.env
+                cwd: shellSpec.cwd,
+                env: shellSpec.env
             });
             connectionInfo.localInteractive = {
                 notificationObserver: observer,
@@ -1677,13 +1686,15 @@ function startLocalInteractiveSession(connectionInfo, currentWindow, commandLine
                 pty: p,
                 proc: null,
                 cwd,
-                shell: shellSpec.label,
+                binding,
+                bindingGuard: setInterval(() => { if (connectionInfo.localTakeoverBinding !== binding || !binding.valid()) stopLocalInteractiveSession(connectionInfo); }, 200),
+                shell: binding.environment.label,
                 command: commandLine,
                 startedAt
             };
             p.onData(onOut);
             p.onExit(({ exitCode, signal }) => onExit(exitCode, signal));
-            return { success: true, usingPty: true, shell: shellSpec.label };
+            return { success: true, usingPty: true, shell: binding.environment.label };
         } catch (e) {
             observer.stop({ error: e.message });
             try {
@@ -1704,6 +1715,7 @@ function startLocalInteractiveSession(connectionInfo, currentWindow, commandLine
 function writeToLocalInteractive(connectionInfo, data) {
     const li = connectionInfo?.localInteractive;
     if (!li || !li.active) throw new Error('无活动的本地交互会话');
+    if (!li.binding?.valid()) { stopLocalInteractiveSession(connectionInfo); throw new Error('本地交互目标已关闭或变化'); }
     if (li.pty) {
         li.pty.write(data);
         return;
@@ -1752,46 +1764,6 @@ function getLocalTerminalCwd(cwd) {
     return fallback;
 }
 
-function getLocalTerminalShellSpec() {
-    if (process.platform === 'win32') {
-        // Windows 默认打开 WSL Ubuntu，使应用像真正的本地 Linux 终端一样工作。
-        // 可通过环境变量覆盖：
-        //   AIT_TERMINAL_SHELL=C:\Windows\System32\wsl.exe
-        //   AIT_TERMINAL_WSL_DISTRO=Ubuntu-22.04
-        // 注意：这里不静默回退 PowerShell；若未安装 Ubuntu，应在终端中暴露
-        // wsl.exe 的错误，避免用户误以为当前环境就是目标 Linux 终端。
-        const distro = (process.env.AIT_TERMINAL_WSL_DISTRO || 'Ubuntu').trim() || 'Ubuntu';
-        const wslExe = process.env.AIT_TERMINAL_SHELL || 'wsl.exe';
-        const wslArgs = ['-d', distro, '--cd', '~'];
-        return {
-            file: wslExe,
-            ptyArgs: wslArgs,
-            pipeArgs: wslArgs,
-            label: `wsl:${distro}`
-        };
-    }
-
-    const shellPath = (process.env.AIT_TERMINAL_SHELL && fs.existsSync(process.env.AIT_TERMINAL_SHELL))
-        ? process.env.AIT_TERMINAL_SHELL
-        : ((process.env.SHELL && fs.existsSync(process.env.SHELL)) ? process.env.SHELL : (fs.existsSync('/bin/bash') ? '/bin/bash' : '/bin/sh'));
-    const base = path.basename(shellPath).toLowerCase();
-    const interactivePipeArgs = ['bash', 'zsh', 'fish', 'sh'].includes(base) ? ['-i'] : [];
-    return {
-        file: shellPath,
-        ptyArgs: [],
-        pipeArgs: interactivePipeArgs,
-        label: base || 'sh'
-    };
-}
-
-function getLocalTerminalEnv() {
-    return {
-        ...process.env,
-        TERM: 'xterm-256color',
-        COLORTERM: process.env.COLORTERM || 'truecolor',
-        AITerminal: '1'
-    };
-}
 
 function sendLocalTerminalEvent(currentWindow, channel, payload) {
     try {
@@ -1810,9 +1782,37 @@ function stopLocalTerminalSession(connectionInfo, tabId) {
 
     sessions.delete(tabId);
     session.active = false;
+    revokeLocalTakeover(connectionInfo, session);
     try { session.pty?.kill?.(); } catch {}
     try { session.proc?.kill?.(); } catch {}
     return true;
+}
+
+function revokeLocalTakeover(connectionInfo, session) {
+    if (connectionInfo.localTakeoverBinding?.backend !== session) return;
+    connectionInfo.localTakeoverBinding = null;
+    connectionInfo.localTakeoverInitialDir = null;
+    connectionInfo.localWorkingDirectory = null;
+    connectionInfo.aiTakeoverMode = false;
+    connectionInfo.aiTakeoverInterrupted = true;
+    for (const controller of connectionInfo.localCommandControllers || []) controller.abort();
+    cancelAiRequests(connectionInfo);
+    stopLocalInteractiveSession(connectionInfo);
+}
+
+async function bindLocalTakeover(connectionInfo, currentWindow, requestedDirectory, hybrid = false) {
+    // A hybrid task can reuse the environment of the local shell that this tab
+    // had before SSH connected. A local-only task requires its visible backend.
+    const session = getLocalTerminalMap(connectionInfo)?.get(connectionInfo.tabId) || (hybrid ? connectionInfo.localTerminalContext : null);
+    if (!session?.environment || (!hybrid && (!session.active || connectionInfo.sshStream))) throw new Error('请先在当前标签打开本地终端，再启动本地接管');
+    const ssh = connectionInfo.sshConnection, stream = connectionInfo.sshStream;
+    const active = session.active;
+    const valid = () => ownsTabConnection(currentWindow, connectionInfo) && connectionInfo.localTerminalContext === session &&
+        connectionInfo.sshConnection === ssh && connectionInfo.sshStream === stream &&
+        (active ? session.active && getLocalTerminalMap(connectionInfo)?.get(connectionInfo.tabId) === session : hybrid && !getLocalTerminalMap(connectionInfo)?.get(connectionInfo.tabId));
+    const cwd = await terminalDirectory(session, requestedDirectory, valid);
+    if (!valid()) throw new Error('读取本地目录期间标签终端已变化');
+    return { target: 'local', shell: session.environment.shell, environment: session.environment, backend: session, cwd, valid };
 }
 
 function stopAllLocalTerminalSessions(connectionInfo) {
@@ -1850,8 +1850,9 @@ function startLocalTerminalSession(connectionInfo, currentWindow, options = {}) 
     }
 
     const size = sanitizeLocalTerminalSize(options.cols, options.rows);
-    const cwd = getLocalTerminalCwd(options.cwd);
-    const shellSpec = getLocalTerminalShellSpec();
+    const environment = createLocalEnvironment({ cwd: getLocalTerminalCwd(options.cwd) });
+    const shellSpec = terminalLaunch(environment);
+    const cwd = environment.cwd;
     const sessionId = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
     const pty = getNodePty();
 
@@ -1861,12 +1862,14 @@ function startLocalTerminalSession(connectionInfo, currentWindow, options = {}) 
 
     const makeSession = (partial) => {
         const session = {
-            notificationObserver: observeProgram(connectionInfo, 'local', 'terminal', shellSpec.label),
+            notificationObserver: observeProgram(connectionInfo, 'local', 'terminal', environment.label),
             id: sessionId,
             tabId,
             active: true,
             usingPty: !!partial.pty,
-            shell: shellSpec.label,
+            shell: environment.label,
+            environment,
+            environmentTracker: shellSpec.tracker,
             cwd,
             cols: size.cols,
             rows: size.rows,
@@ -1874,13 +1877,18 @@ function startLocalTerminalSession(connectionInfo, currentWindow, options = {}) 
             ...partial
         };
         sessions.set(tabId, session);
+        connectionInfo.localTerminalContext = session;
         return session;
     };
 
     const onData = (chunk) => {
         const current = sessions.get(tabId);
         if (!current || current.id !== sessionId || !current.active) return;
-        const text = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : (chunk || '').toString();
+        let text = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : (chunk || '').toString();
+        if (current.environmentTracker) {
+            try { text = current.environmentTracker.feed(text); if (current.environmentTracker.pid && current.cwd === '~') current.cwd = environment.cwd; }
+            catch (error) { stopLocalTerminalSession(connectionInfo, tabId); sendLocalTerminalEvent(currentWindow, 'terminal-local-exit', { tabId, code: 1, shell: environment.label }); return; }
+        }
         if (!text) return;
         observeTerminalData(current, text);
         try { connectionInfo.lastLocalOutput = text; } catch {}
@@ -1893,12 +1901,13 @@ function startLocalTerminalSession(connectionInfo, currentWindow, options = {}) 
         closeTerminalNotifications(current, { exitCode: code, signal });
         sessions.delete(tabId);
         current.active = false;
+        revokeLocalTakeover(connectionInfo, current);
         const normalizedCode = (typeof code === 'number') ? code : null;
         sendLocalTerminalEvent(currentWindow, 'terminal-local-exit', {
             tabId,
             code: normalizedCode,
             signal: signal || null,
-            shell: shellSpec.label
+            shell: environment.label
         });
     };
 
@@ -1907,18 +1916,18 @@ function startLocalTerminalSession(connectionInfo, currentWindow, options = {}) 
     }
     if (pty) {
         try {
-            const termPty = pty.spawn(shellSpec.file, shellSpec.ptyArgs, {
+            const termPty = pty.spawn(shellSpec.file, shellSpec.args, {
                 name: 'xterm-256color',
                 cols: size.cols,
                 rows: size.rows,
-                cwd,
-                env: getLocalTerminalEnv()
+                cwd: shellSpec.cwd,
+                env: environment.env
             });
             makeSession({ pty: termPty, proc: null });
             termPty.onData(onData);
             termPty.onExit(({ exitCode, signal }) => onExit(exitCode, signal));
             console.log('Local PTY session ready');
-            return { success: true, usingPty: true, shell: shellSpec.label, cwd };
+            return { success: true, usingPty: true, shell: environment.label, cwd };
         } catch (e) {
             sendLocalTerminalEvent(currentWindow, 'terminal-local-output', {
                 tabId,
@@ -2094,8 +2103,10 @@ ipcMain.handle('ssh-connect', (event, config) => {
             }
         }
         const tabAiConfig = getAiConfig(connectionInfo);
+        if (config.aiBaseUrl && apiSecretScope(config.aiBaseUrl) !== apiSecretScope(tabAiConfig.baseUrl)) tabAiConfig.apiKey = null;
         // 保存AI配置
         if (config.enableAI) {
+            tabAiConfig.apiFormat = normalizeApiFormat(config.aiApiFormat);
             if (config.aiApiKey && typeof config.aiApiKey === 'string') {
                 tabAiConfig.apiKey = config.aiApiKey.trim();
             }
@@ -2749,6 +2760,8 @@ ipcMain.handle('ai-test-connection', async (event, config, tabId) => {
     try {
         config = config && typeof config === 'object' ? config : {};
         const testConfig = { ...getAiConfig(connectionInfo) };
+        if (config.aiBaseUrl && apiSecretScope(config.aiBaseUrl) !== apiSecretScope(testConfig.baseUrl)) testConfig.apiKey = null;
+        testConfig.apiFormat = normalizeApiFormat(config.aiApiFormat);
         if (config.aiApiKey && typeof config.aiApiKey === 'string') {
             testConfig.apiKey = config.aiApiKey.trim();
         }
@@ -5133,6 +5146,9 @@ async function handleRfe(remotePath, connectionInfo) {
 // AI功能相关函数 - 带重试机制
 async function callOpenAI(messages, maxTokens = null, isStreaming = false, streamCallback = null, retryCount = 0, owner = null, configOverride = null) {
     if (owner && !ownsTabConnection(getWindowForConnectionInfo(owner), owner)) throw new Error('标签已关闭');
+    const run = owner?.takeoverRun, localBinding = owner?.localTakeoverBinding, ssh = owner?.sshConnection, stream = owner?.sshStream;
+    const requestValid = () => !owner || (ownsTabConnection(getWindowForConnectionInfo(owner), owner) && owner.takeoverRun === run && owner.localTakeoverBinding === localBinding && owner.sshConnection === ssh && owner.sshStream === stream && (!localBinding || localBinding.valid()));
+    const update = (content, done) => { if (requestValid()) streamCallback?.(content, done); };
     const config = { ...validateAiConfig(configOverride || getAiConfig(owner)) };
     const instructions = owner ? getPluginManager().prompt(owner.pluginIds) + '\n' + await getPluginRuntime().prompt(owner, { mode: owner.aiTakeoverMode ? 'takeover' : 'terminal', target: owner.aiTakeoverTarget === 'local' ? 'local' : 'remote' }) : '';
     if (owner && !ownsTabConnection(getWindowForConnectionInfo(owner), owner)) throw new Error('标签已关闭');
@@ -5140,25 +5156,30 @@ async function callOpenAI(messages, maxTokens = null, isStreaming = false, strea
         ? { ...message, content: message.content + instructions } : { ...message });
     if (instructions && prepared[0]?.role !== 'system') prepared.unshift({ role: 'system', content: instructions });
     if (owner?.pluginModel && owner.pluginIds.has(owner.pluginModel.pluginId)) {
-        const result = await getPluginRuntime().invoke(owner, owner.pluginModel.pluginId, 'model', owner.pluginModel.id, { messages: prepared, maxTokens: maxTokens || config.maxTokens, streaming: isStreaming }, { hidden: true, onOutput: text => streamCallback?.(text, false) });
+        const result = await getPluginRuntime().invoke(owner, owner.pluginModel.pluginId, 'model', owner.pluginModel.id, { messages: prepared, maxTokens: maxTokens || config.maxTokens, streaming: isStreaming }, { hidden: true, onOutput: text => update(text, false) });
+        if (!requestValid()) throw new Error('模型请求期间终端或接管任务已变化');
         if (typeof result !== 'string') throw new Error('模型插件必须返回文本');
-        if (isStreaming) streamCallback?.(result, true);
+        if (isStreaming) update(result, true);
         return result;
     }
     const toolOptions = await pluginModelTools(owner);
     if (owner && !ownsTabConnection(getWindowForConnectionInfo(owner), owner)) throw new Error('标签已关闭');
-    return requestChat({ config, messages: prepared, maxTokens, streaming: isStreaming, onUpdate: streamCallback, owner, retries: Math.max(0, 2 - retryCount), ...toolOptions });
+    if (!requestValid()) throw new Error('模型请求期间终端或接管任务已变化');
+    const response = await requestChat({ config, messages: prepared, maxTokens, streaming: isStreaming, onUpdate: update, owner, retries: Math.max(0, 2 - retryCount), ...toolOptions });
+    if (!requestValid()) throw new Error('模型请求期间终端或接管任务已变化');
+    return response;
 }
 
-function getSystemContext(connectionInfo = null) {
+async function getSystemContext(connectionInfo = null) {
     const config = getAiConfig(connectionInfo);
-    const currentDir = connectionInfo ? connectionInfo.currentWorkingDirectory : '/';
-    const terminalOutput = connectionInfo ? connectionInfo.lastTerminalOutput.slice(-500) : '无终端输出';
+    const context = await refreshTerminalContext(connectionInfo);
+    const currentDir = context.cwd;
+    const terminalOutput = context.output.slice(-500);
 
-    let basePrompt = `你是一个Linux系统管理助手。当前环境信息：
+    let basePrompt = `你是一个系统管理助手。当前环境信息：
 - 当前目录: ${currentDir}
 - 最近终端输出: ${terminalOutput}
-- 操作系统: Linux/Unix
+- 操作系统与 Shell: ${context.system}
 
 请提供准确、实用的建议和命令。如果用户询问如何执行某个操作，请提供具体的shell命令。
 
@@ -5187,6 +5208,24 @@ function getSystemContext(connectionInfo = null) {
     }
 
     return basePrompt;
+}
+
+function visibleTerminalContext(connectionInfo) {
+    if (connectionInfo?.sshStream) return { cwd: connectionInfo.currentWorkingDirectory || '/', output: connectionInfo.lastTerminalOutput || '', system: '远程 SSH 终端（Unix Shell；具体系统请通过终端确认）' };
+    const session = getLocalTerminalMap(connectionInfo)?.get(connectionInfo?.tabId);
+    return { cwd: session?.cwd || '~', output: connectionInfo?.lastLocalOutput || '',
+        system: session?.environment ? `${session.environment.platform} / ${session.environment.label} / ${session.environment.shellFile || '启动中'}` : '当前没有活动终端' };
+}
+
+async function refreshTerminalContext(connectionInfo) {
+    if (connectionInfo && !connectionInfo.sshStream) {
+        const session = getLocalTerminalMap(connectionInfo)?.get(connectionInfo.tabId);
+        if (session?.active) {
+            const valid = () => ownsTabConnection(getWindowForConnectionInfo(connectionInfo), connectionInfo) && !connectionInfo.sshStream && getLocalTerminalMap(connectionInfo)?.get(connectionInfo.tabId) === session && session.active;
+            await terminalDirectory(session, null, valid);
+        }
+    }
+    return visibleTerminalContext(connectionInfo);
 }
 
 function getGeneralChatContext(config = aiConfig) {
@@ -5247,7 +5286,7 @@ async function handleAiCommand(userInput, isStreaming = false, connectionInfo = 
 	    if (!connectionInfo) throw new Error('缺少标签会话');
 	    const conversationHistory = connectionInfo.aiConversationHistory;
         const messages = [
-            { role: "system", content: getSystemContext(connectionInfo) },
+            { role: "system", content: await getSystemContext(connectionInfo) },
             ...conversationHistory.slice(-10),
             { role: "user", content: userInput }
         ];
@@ -5297,10 +5336,11 @@ async function handleAiFixCommand(userInput, isStreaming = false, connectionInfo
             };
         }
 
-        const currentDir = connectionInfo ? connectionInfo.currentWorkingDirectory : '/';
-        const terminalOutput = connectionInfo ? connectionInfo.lastTerminalOutput.slice(-1000) : '无终端输出';
+        const context = await refreshTerminalContext(connectionInfo);
+        const currentDir = context.cwd;
+        const terminalOutput = context.output.slice(-1000);
 
-        let systemPrompt = `你是一个Linux系统故障诊断专家。请分析以下信息并提供修复建议：
+        let systemPrompt = `你是一个系统故障诊断专家。当前系统与 Shell: ${context.system}。请分析以下信息并提供修复建议：
 
 当前目录: ${currentDir}
 最近终端输出: ${terminalOutput}
@@ -5358,8 +5398,9 @@ async function handleAiAnalyzeCommand(userInput, isStreaming = false, connection
         }
 
         const systemInfo = await getSystemInfo(connectionInfo);
-        const currentDir = connectionInfo ? connectionInfo.currentWorkingDirectory : '/';
-        const terminalOutput = connectionInfo ? connectionInfo.lastTerminalOutput.slice(-1000) : '无终端输出';
+        const context = await refreshTerminalContext(connectionInfo);
+        const currentDir = context.cwd;
+        const terminalOutput = context.output.slice(-1000);
 
         let systemPrompt = `你是一个系统分析专家。请分析以下系统信息：
 
@@ -5419,9 +5460,10 @@ async function handleNaturalLanguageCommand(userInput, isStreaming = false, conn
             };
         }
 
-        const currentDir = connectionInfo ? connectionInfo.currentWorkingDirectory : '/';
+        const context = await refreshTerminalContext(connectionInfo);
+        const currentDir = context.cwd;
 
-        let systemPrompt = `你是一个Linux命令转换专家。用户会用自然语言描述他们想要执行的操作，你需要将其转换为准确的shell命令。
+        let systemPrompt = `你是一个命令转换专家。当前系统与 Shell: ${context.system}。用户会用自然语言描述他们想要执行的操作，你需要将其转换为准确的shell命令。
 
 当前目录: ${currentDir}
 用户请求: ${userInput}
@@ -5474,6 +5516,14 @@ async function handleNaturalLanguageCommand(userInput, isStreaming = false, conn
 
 // 获取系统信息
 async function getSystemInfo(connectionInfo = null) {
+    if (connectionInfo && !connectionInfo.sshConnection) {
+        const binding = capturePluginBinding(connectionInfo);
+        if (!binding.valid()) return '当前没有活动终端';
+        try {
+            const cwd = await binding.resolveCwd();
+            return (await executeInEnvironment(binding.environment, 'uname -a; df -h; ps aux | head -10', cwd, { valid: binding.valid, timeoutMs: 10000 })).output;
+        } catch (error) { return `获取终端系统信息失败: ${error.message}`; }
+    }
     return new Promise((resolve) => {
         if (!connectionInfo || !connectionInfo.sshConnection) {
             return resolve('无SSH连接，无法获取系统信息');
@@ -5799,57 +5849,30 @@ ipcMain.handle('ai-takeover-start', async (event, payload) => {
         return { success: false, error: '需要SSH连接才能启动远程/混合AI接管模式' };
     }
 
-	    // Local/hybrid requires explicit consent and an initial working directory.
+    // Bind the same terminal system and its cwd before asking for consent.
+    let localBinding = null;
+    const remoteConnection = connectionInfo.sshConnection, remoteStream = connectionInfo.sshStream;
     if (target === 'local' || target === 'hybrid') {
         try {
-	            const consentOptions = {
-                type: 'warning',
-                title: '启用本地AI接管',
-                message: '本地AI接管将允许AI在本机执行命令并修改文件。',
-	                detail: 'AI将在本机 Shell 中以当前用户权限运行，可访问该用户有权访问的文件和系统资源。所选目录只作为初始工作目录，不是安全沙箱。高危命令会在执行前单独要求确认。',
-                buttons: ['取消', '继续'],
-                defaultId: 1,
-                cancelId: 0,
-            };
-            const consent = currentWindow
-                ? await dialog.showMessageBox(currentWindow, consentOptions)
-                : await dialog.showMessageBox(consentOptions);
-            if (consent.response !== 1) {
-                return { success: false, error: '用户取消启用本地AI接管' };
-            }
-        } catch (e) {
-            return { success: false, error: `本地接管确认失败: ${e.message}` };
-        }
-
-	        // Validate or ask for the initial working directory.
-        let rootDir = (typeof localRootDir === 'string' && localRootDir.trim()) ? localRootDir.trim() : null;
-        try {
-            if (!rootDir || !fs.existsSync(rootDir) || !fs.statSync(rootDir).isDirectory()) {
-                const pickOptions = {
-	                    title: '选择本地AI初始工作目录',
-                    properties: ['openDirectory']
-                };
-                const picked = currentWindow
-                    ? await dialog.showOpenDialog(currentWindow, pickOptions)
-                    : await dialog.showOpenDialog(pickOptions);
-                if (picked.canceled || !picked.filePaths?.length) {
-	                    return { success: false, error: '未选择本地初始工作目录' };
-                }
-                rootDir = picked.filePaths[0];
-            }
-        } catch (e) {
-	            return { success: false, error: `选择本地初始工作目录失败: ${e.message}` };
-        }
-
-        connectionInfo.localTakeoverInitialDir = rootDir;
-        connectionInfo.localWorkingDirectory = rootDir;
-        connectionInfo.lastLocalOutput = '';
-    } else {
-        // Remote-only takeover: keep local context unset to avoid accidental local execution
-        connectionInfo.localTakeoverInitialDir = null;
-        connectionInfo.localWorkingDirectory = null;
-        connectionInfo.lastLocalOutput = '';
+            localBinding = await bindLocalTakeover(connectionInfo, currentWindow, localRootDir, target === 'hybrid');
+            const consent = await dialog.showMessageBox(currentWindow, {
+                type: 'warning', title: '启用本地AI接管',
+                message: `AI 将在当前终端环境 ${localBinding.environment.label} 中执行命令。`,
+                detail: `工作目录: ${localBinding.cwd}\n与当前终端使用相同系统和用户权限。高危命令仍需单独确认。`,
+                buttons: ['取消', '继续'], defaultId: 1, cancelId: 0
+            });
+            if (consent.response !== 1) return { success: false, error: '用户取消启用本地AI接管' };
+            if (!localBinding.valid()) throw new Error('确认期间终端已关闭或变化，请重新启动接管');
+        } catch (error) { return { success: false, error: error.message }; }
     }
+    if (!ownsTabConnection(currentWindow, connectionInfo) || connectionInfo.sshConnection !== remoteConnection || connectionInfo.sshStream !== remoteStream) return { success: false, error: '启动期间终端会话已变化' };
+    for (const controller of connectionInfo.localCommandControllers || []) controller.abort();
+    connectionInfo.localTakeoverBinding = localBinding;
+    const takeoverRun = Symbol('takeover-run');
+    connectionInfo.takeoverRun = takeoverRun;
+    connectionInfo.localTakeoverInitialDir = localBinding?.cwd || null;
+    connectionInfo.localWorkingDirectory = localBinding?.cwd || null;
+    connectionInfo.lastLocalOutput = '';
 
     // 初始化接管模式
     connectionInfo.aiTakeoverMode = true;
@@ -5888,6 +5911,7 @@ ipcMain.handle('ai-takeover-start', async (event, payload) => {
 
     // 开始AI规划和执行
     setTimeout(() => {
+        if (connectionInfo.takeoverRun !== takeoverRun || !ownsTabConnection(currentWindow, connectionInfo)) return;
         executeAiTakeoverStep(connectionInfo, currentWindow);
     }, 1000);
 
@@ -5897,6 +5921,7 @@ ipcMain.handle('ai-takeover-start', async (event, payload) => {
 ipcMain.handle('ai-takeover-stop', async (event, tabId) => {
     const connectionInfo = getWindowConnectionInfo(event, tabId);
     const currentWindow = getWindow(event);
+    for (const controller of connectionInfo?.localCommandControllers || []) controller.abort();
     
     if (connectionInfo && connectionInfo.aiTakeoverMode) {
         // 设置打断标志，而不是完全停止
@@ -5981,8 +6006,8 @@ ipcMain.handle('ai-takeover-continue', async (event, userResponse, tabId) => {
     if ((takeoverTarget === 'remote' || takeoverTarget === 'hybrid') && !connectionInfo.sshConnection) {
         return { success: false, error: '需要SSH连接才能继续远程/混合AI接管模式' };
     }
-    if ((takeoverTarget === 'local' || takeoverTarget === 'hybrid') && !connectionInfo.localTakeoverInitialDir) {
-	    return { success: false, error: '未配置本地初始工作目录，无法继续本地/混合AI接管模式' };
+    if ((takeoverTarget === 'local' || takeoverTarget === 'hybrid') && !connectionInfo.localTakeoverBinding?.valid()) {
+	    return { success: false, error: '本地终端已关闭或变化，请重新打开本地终端并启动接管' };
     }
     
     if (!getAiConfig(connectionInfo).apiKey) {
@@ -6120,8 +6145,8 @@ ipcMain.handle('ai-takeover-resume', async (event, newInstruction, tabId) => {
     if ((takeoverTarget === 'remote' || takeoverTarget === 'hybrid') && !connectionInfo.sshConnection) {
         return { success: false, error: '需要SSH连接才能继续远程/混合AI接管模式' };
     }
-    if ((takeoverTarget === 'local' || takeoverTarget === 'hybrid') && !connectionInfo.localTakeoverInitialDir) {
-	    return { success: false, error: '未配置本地初始工作目录，无法继续本地/混合AI接管模式' };
+    if ((takeoverTarget === 'local' || takeoverTarget === 'hybrid') && !connectionInfo.localTakeoverBinding?.valid()) {
+	    return { success: false, error: '本地终端已关闭或变化，请重新打开本地终端并启动接管' };
     }
     
     if (!getAiConfig(connectionInfo).apiKey) {
@@ -6179,8 +6204,8 @@ ipcMain.handle('ai-takeover-retry', async (event, tabId) => {
     if ((takeoverTarget === 'remote' || takeoverTarget === 'hybrid') && !connectionInfo.sshConnection) {
         return { success: false, error: '需要SSH连接才能重试远程/混合接管' };
     }
-    if ((takeoverTarget === 'local' || takeoverTarget === 'hybrid') && !connectionInfo.localTakeoverInitialDir) {
-	    return { success: false, error: '未配置本地初始工作目录，无法重试本地/混合接管' };
+    if ((takeoverTarget === 'local' || takeoverTarget === 'hybrid') && !connectionInfo.localTakeoverBinding?.valid()) {
+	    return { success: false, error: '本地终端已关闭或变化，请重新打开本地终端并启动接管' };
     }
     connectionInfo.aiTakeoverMode = true;
     connectionInfo.aiTakeoverInterrupted = false;
@@ -6217,6 +6242,11 @@ async function executeAiTakeoverStep(connectionInfo, currentWindow, retryCount =
     }
     if (!ownsTabConnection(currentWindow, connectionInfo)) return;
     if (!connectionInfo.aiTakeoverMode) {
+        return;
+    }
+    if (['local', 'hybrid'].includes(connectionInfo.aiTakeoverTarget) && !connectionInfo.localTakeoverBinding?.valid()) {
+        connectionInfo.aiTakeoverMode = false;
+        sendTabEvent(currentWindow, connectionInfo, 'ai-takeover-update', { type: 'error', message: '本地终端已关闭或变化，请重新启动接管。' });
         return;
     }
     // 同步上下文索引
@@ -6697,15 +6727,15 @@ function buildTakeoverSystemPrompt(connectionInfo) {
     const takeoverTarget = (connectionInfo.aiTakeoverTarget || 'remote').toLowerCase();
     const remoteEnabled = takeoverTarget === 'remote' || takeoverTarget === 'hybrid';
     const localEnabled = takeoverTarget === 'local' || takeoverTarget === 'hybrid';
-    let localShell = process.platform === 'win32' ? 'powershell' : 'sh';
-    try { localShell = getLocalShellSpec().label || localShell; } catch {}
+    const localEnvironment = connectionInfo.localTakeoverBinding?.environment;
+    const localShell = localEnvironment?.shellFile || '未绑定';
 
     const remoteEnvInfo = remoteEnabled
         ? `远程(SSH)环境信息:\n- 远程初始目录: ${connectionInfo.aiTakeoverInitialDir}\n- 远程当前目录: ${connectionInfo.currentWorkingDirectory}\n- 远程最近输出: ${(connectionInfo.lastTerminalOutput || '').slice(-800)}\n`
         : `远程(SSH)环境信息:\n- 未启用远程执行\n`;
 
 	    const localEnvInfo = localEnabled
-	        ? `\n本地环境信息:\n- 平台: ${process.platform}\n- Shell: ${localShell}\n- 本地初始工作目录: ${connectionInfo.localTakeoverInitialDir}\n- 本地当前目录: ${connectionInfo.localWorkingDirectory}\n- 本地最近输出: ${(connectionInfo.lastLocalOutput || '').slice(-800)}\n`
+	        ? `\n本地环境信息:\n- 平台: ${localEnvironment?.platform} (${localEnvironment?.label})\n- Shell: ${localShell}\n- 本地初始工作目录: ${connectionInfo.localTakeoverInitialDir}\n- 本地当前目录: ${connectionInfo.localWorkingDirectory}\n- 本地最近输出: ${(connectionInfo.lastLocalOutput || '').slice(-800)}\n- 命令在此终端系统中运行，使用此系统路径；独立命令不继承可见 Shell 的临时变量和别名。\n`
         : '';
 
     return `你是一个系统管理AI助手，现在处于接管模式。接管目标: ${takeoverTarget}。\n你的任务是: ${connectionInfo.aiTakeoverTask}${contextInfo}${mcpGuide}${replGuide}
@@ -7292,121 +7322,33 @@ function expandLocalTilde(p) {
     return p;
 }
 
-function getLocalShellSpec() {
-    if (process.platform === 'win32') {
-        return { file: 'powershell.exe', argsPrefix: ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command'], label: 'powershell' };
-    }
-
-    const shellPath = (process.env.SHELL && fs.existsSync(process.env.SHELL)) ? process.env.SHELL : '/bin/bash';
-    const base = path.basename(shellPath).toLowerCase();
-    const argsPrefix = (base === 'bash' || base === 'zsh') ? ['-lc'] : ['-c'];
-    return { file: shellPath, argsPrefix, label: base || 'sh' };
-}
-
-function buildWrappedLocalCommand(command, metaToken) {
-    const cmd = (command || '').trim();
-    if (process.platform === 'win32') {
-        // Use a script block so multi-statement commands work.
-        // Note: In PowerShell, $LASTEXITCODE is only reliable for native executables.
-        return (
-            `& { ${cmd} } ; ` +
-            `$aitermExit = $LASTEXITCODE; ` +
-            `if ($aitermExit -eq $null) { $aitermExit = if ($?) { 0 } else { 1 } } ; ` +
-            `$aitermPwd = (Get-Location).Path; ` +
-            `Write-Output "${metaToken}PWD:$aitermPwd"; ` +
-            `Write-Output "${metaToken}EXIT:$aitermExit"; ` +
-            `exit $aitermExit`
-        );
-    }
-
-    // POSIX shell
-    return (
-        `{ ${cmd}; }; status=$?; ` +
-        `echo "${metaToken}PWD:$PWD"; ` +
-        `echo "${metaToken}EXIT:$status"; ` +
-        `exit $status`
-    );
-}
-
-function prepareLocalCommand(connectionInfo, command, options = {}) {
-    let out = (command || '').toString();
-    if (!out || !connectionInfo?.localTakeoverInitialDir) return out;
-
-	    // Keep generated helper scripts near the current working directory so they
-	    // work consistently on local shells where /tmp may not exist.
-    const tempPathRe = /\/tmp\/((?:findreplace|preview|insertafter|createfile|createhtml|listsnapshots)_[A-Za-z0-9_.-]+\.py)/g;
-    const hasTempPath = tempPathRe.test(out);
-    tempPathRe.lastIndex = 0;
-    if (hasTempPath) {
-		        const cwd = connectionInfo.localWorkingDirectory || connectionInfo.localTakeoverInitialDir;
-		        const scratchDir = path.resolve(cwd, '.aiterminal_tmp');
-	        if (options.ensureScratchDir !== false) fs.mkdirSync(scratchDir, { recursive: true });
-        out = out.replace(tempPathRe, '.aiterminal_tmp/$1');
-    }
-
-    return out;
+function prepareLocalCommand(connectionInfo, command) {
+    // Generated POSIX helpers already use /tmp in the target terminal system.
+    // Do not rewrite WSL paths or create directories through Windows fs.
+    return String(command || '');
 }
 
 async function executeLocalShellCommand(connectionInfo, command) {
-    const root = connectionInfo.localTakeoverInitialDir || os.homedir();
-    const cwd = connectionInfo.localWorkingDirectory || root;
-    const metaToken = `__AITERM_LOCAL_META__${Date.now().toString(36).toUpperCase()}__`;
-
-    const shell = getLocalShellSpec();
-    const wrapped = buildWrappedLocalCommand(command, metaToken);
+    const binding = connectionInfo.localTakeoverBinding;
+    if (!binding?.valid()) throw new Error('本地终端已关闭或变化，请重新启动接管');
+    const valid = () => connectionInfo.localTakeoverBinding === binding && binding.valid();
+    const controller = new AbortController();
+    connectionInfo.localCommandControllers ||= new Set();
+    connectionInfo.localCommandControllers.add(controller);
     const observer = observeProgram(connectionInfo, 'local', 'ai-command', command);
-
-    return new Promise((resolve, reject) => {
-        const child = spawn(shell.file, [...shell.argsPrefix, wrapped], {
-            cwd,
-            windowsHide: true,
-            env: process.env
+    try {
+        const result = await executeInEnvironment(binding.environment, command, connectionInfo.localWorkingDirectory || binding.cwd, {
+            valid, signal: controller.signal, onOutput: text => observer.output(text)
         });
-
-        let combined = '';
-        child.stdout.on('data', (d) => { combined += d.toString('utf8'); observer.output(d); });
-        child.stderr.on('data', (d) => { combined += d.toString('utf8'); observer.output(d); });
-        child.on('error', (err) => { observer.stop({ error: err.message }); reject(err); });
-
-        child.on('close', (code, signal) => {
-            observer.stop({ exitCode: code, signal });
-            let exitCode = typeof code === 'number' ? code : 0;
-            let newCwd = null;
-
-            const cleanedLines = [];
-            const lines = combined.split(/\r?\n/);
-            for (const line of lines) {
-                if (line.startsWith(metaToken + 'PWD:')) {
-                    newCwd = line.substring((metaToken + 'PWD:').length).trim();
-                    continue;
-                }
-                if (line.startsWith(metaToken + 'EXIT:')) {
-                    const n = parseInt(line.substring((metaToken + 'EXIT:').length).trim(), 10);
-                    if (!Number.isNaN(n)) exitCode = n;
-                    continue;
-                }
-                cleanedLines.push(line);
-            }
-
-            let output = cleanedLines.join('\n');
-            // Normalize trailing whitespace but keep inner newlines.
-            output = output.replace(/\s+$/, '');
-
-            // Update local working directory if possible and safe.
-	        if (newCwd) {
-	            const expanded = path.resolve(expandLocalTilde(newCwd));
-	            try {
-	                if (fs.existsSync(expanded) && fs.statSync(expanded).isDirectory()) {
-	                    connectionInfo.localWorkingDirectory = expanded;
-	                }
-	            } catch {}
-	        }
-
-            connectionInfo.lastLocalOutput = output;
-
-            resolve({ output, exitCode, cwd: connectionInfo.localWorkingDirectory || cwd, shell: shell.label });
-        });
-    });
+        if (!valid()) throw new Error('执行期间本地终端已关闭或变化');
+        observer.stop({ exitCode: result.exitCode, signal: result.signal });
+        connectionInfo.localWorkingDirectory = result.cwd;
+        connectionInfo.lastLocalOutput = result.output;
+        return result;
+    } catch (error) {
+        observer.stop({ error: error.message, reason: controller.signal.aborted ? 'cancelled' : '' });
+        throw error;
+    } finally { connectionInfo.localCommandControllers.delete(controller); }
 }
 
 function decodeActionAuditSubject(actionPlan, command) {
@@ -7503,7 +7445,7 @@ async function executeAiCommand(connectionInfo, currentWindow, actionPlan) {
         if (pluginCall) {
             if (connectionInfo.replMode) throw new Error('请先退出当前交互程序，再运行插件动作');
             const resolved = getPluginManager().resolveAction(connectionInfo.pluginIds, pluginCall.pluginId, pluginCall.actionId, {
-                target: execTarget, shell: execTarget === 'local' && process.platform === 'win32' ? 'powershell' : 'posix'
+                target: execTarget, shell: execTarget === 'local' ? connectionInfo.localTakeoverBinding?.environment.shell || 'posix' : 'posix'
             });
             pluginLease = { ...pluginCall, ...resolved };
             command = resolved.command;
@@ -7521,10 +7463,10 @@ async function executeAiCommand(connectionInfo, currentWindow, actionPlan) {
         setTimeout(() => executeAiTakeoverStep(connectionInfo, currentWindow), 1200);
         return;
     }
-	if (execTarget === 'local' && !connectionInfo.localTakeoverInitialDir) {
+	if (execTarget === 'local' && !connectionInfo.localTakeoverBinding?.valid()) {
         currentWindow.webContents.send('ai-takeover-update', {
             type: 'error',
-	        message: '🚫 未配置本地初始工作目录，无法执行本地命令。请重新启动本地/混合接管模式并选择目录。'
+	        message: '🚫 本地终端已关闭或变化，请重新打开本地终端并启动接管。'
         });
         setTimeout(() => executeAiTakeoverStep(connectionInfo, currentWindow), 1200);
 	    return;
@@ -7551,7 +7493,7 @@ async function executeAiCommand(connectionInfo, currentWindow, actionPlan) {
 	const audit = auditCommand(auditSubject, { requiresConfirmation: actionPlan.requiresConfirmation === true });
 	const auditedBackend = execTarget === 'remote'
 	    ? connectionInfo.sshStream
-	    : connectionInfo.localTakeoverInitialDir;
+	    : connectionInfo.localTakeoverBinding;
 	const priorApproval = actionPlan[INTERNAL_SECURITY_APPROVAL];
 	const approvalStillValid = audit.requiresConfirmation &&
 	    priorApproval?.command === command &&
@@ -7575,21 +7517,18 @@ async function executeAiCommand(connectionInfo, currentWindow, actionPlan) {
 	    return;
 	}
 	if (!ownsTabConnection(currentWindow, connectionInfo)) return;
+    const backendUnchanged = execTarget === 'remote'
+        ? connectionInfo.sshConnection === executingSshConnection && connectionInfo.sshStream === auditedBackend
+        : connectionInfo.localTakeoverBinding === auditedBackend && auditedBackend?.valid();
+    if (!backendUnchanged) {
+        sendTabEvent(currentWindow, connectionInfo, 'ai-takeover-update', { type: 'error', message: '执行目标已关闭或变化，请重新规划。' });
+        return;
+    }
 	if (pluginLease && !getPluginManager().isCurrent(connectionInfo.pluginIds, pluginLease.pluginId, pluginLease.digest, pluginLease.activation)) {
         sendTabEvent(currentWindow, connectionInfo, 'ai-takeover-update', { type: 'error', message: '插件已停用或更新，本次动作已取消' });
         return;
     }
 	if (audit.requiresConfirmation && !approvalStillValid) {
-	    const backendUnchanged = execTarget === 'remote'
-	        ? connectionInfo.sshStream === auditedBackend
-	        : connectionInfo.localTakeoverInitialDir === auditedBackend;
-	    if (!ownsTabConnection(currentWindow, connectionInfo) || !backendUnchanged) {
-	        sendTabEvent(currentWindow, connectionInfo, 'ai-takeover-update', {
-	            type: 'error',
-	            message: '🚫 确认期间终端会话已变化，请重新执行。'
-	        });
-	        return;
-	    }
 	    Object.defineProperty(actionPlan, INTERNAL_SECURITY_APPROVAL, {
 	        value: { command, auditSubject, target: execTarget, backend: auditedBackend },
 	        configurable: true,

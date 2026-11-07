@@ -19,6 +19,8 @@
     "plugin:dev": "node scripts/pluginDev.js",
     "smoke:renderer-security": "node scripts/rendererSecuritySmoke.js",
     "smoke:pty": "electron --no-sandbox scripts/ptySmoke.js",
+    "smoke:local-environment": "electron --no-sandbox scripts/localEnvironmentSmoke.js",
+    "smoke:ai-protocols": "node scripts/aiProtocolSmoke.js",
     "smoke:package-startup": "node scripts/packageStartupSmoke.js",
     "publish:github-build": "node scripts/publishGitHubBuild.js",
     "pack": "electron-builder",

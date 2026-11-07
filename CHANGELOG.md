@@ -4,6 +4,11 @@ All notable changes to AITerminal will be documented here.
 
 ## Unreleased
 
+- Added OpenAI Responses and Anthropic Messages adapters alongside Chat Completions, with selectable/automatic endpoint formats, provider authentication, JSON/SSE responses, correlated multi-tool continuation and per-tab cancellation. Switching provider URLs clears the previous provider's key; the settings field now masks keys.
+- Unified visible local terminals, AI takeover, interactive programs and plugin execution around the same captured terminal environment. Windows uses WSL Ubuntu throughout; local takeover starts from the visible shell's directory and rejects replaced backends.
+- Added local-environment PTY smoke tests covering cwd, Unicode, AI commands, plugin files, interactive input and resize. Windows package verification now checks the shared environment module.
+- Merged community PR #8 with an English per-tab state example, offline lifecycle fixes, bounded conflict retries and real plugin-process tests. Added linux.do community links while preserving README demo recordings.
+
 ## 1.5.1 - 2026-11-07
 
 - Published the current desktop application and plugin host source under Apache-2.0 in the public AITerminal repository, preserving the original logo and existing public history.

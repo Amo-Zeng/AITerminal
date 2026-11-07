@@ -2593,6 +2593,7 @@
                 aiDisplayMode: document.getElementById('aiDisplayMode').value,
                 aiApiKey: document.getElementById('aiApiKey').value.trim(),
                 aiBaseUrl: document.getElementById('aiBaseUrl').value.trim(),
+                aiApiFormat: document.getElementById('aiApiFormat').value,
                 aiModel: getSelectedModel(),
                 aiMaxTokens: document.getElementById('aiMaxTokens').value,
                 aiTemperature: document.getElementById('aiTemperature').value,
@@ -2767,8 +2768,9 @@
                                 <h3>🤖 AI助手配置</h3>
                                 <div class="checkbox-group"><input type="checkbox" id="enableAI" checked><label for="enableAI">启用AI助手功能</label></div>
                                 <div class="form-group"><label>AI回答显示方式:</label><select id="aiDisplayMode"><option value="modal">分屏显示 (推荐)</option><option value="terminal">终端显示</option></select></div>
-                                <div class="form-group"><label>API密钥:</label><input type="text" id="aiApiKey" placeholder="输入OpenAI API密钥"><small>获取: <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI官网</a></small></div>
-                                <div class="form-group"><label>API基础URL:</label><input type="text" id="aiBaseUrl" value="https://api.openai.com"></div>
+                                <div class="form-group"><label for="aiApiKey">API密钥:</label><input type="password" id="aiApiKey" placeholder="输入所选服务的 API Key" autocomplete="off"><small>请使用与 API 地址对应的服务商密钥。</small></div>
+                                <div class="form-group"><label for="aiApiFormat">API 格式:</label><select id="aiApiFormat"><option value="auto">自动（根据完整 URL 识别，默认 Chat Completions）</option><option value="chat-completions">OpenAI Chat Completions · /v1/chat/completions</option><option value="responses">OpenAI Responses · /v1/responses</option><option value="messages">Anthropic Messages · /v1/messages</option></select></div>
+                                <div class="form-group"><label for="aiBaseUrl">API 地址:</label><input type="text" id="aiBaseUrl" value="https://api.openai.com"><small>支持基础地址、/v1 前缀或完整接口 URL。Messages 可填写 https://api.anthropic.com；请同时填写该服务的模型名称和 API Key。</small></div>
                                 <div class="form-group"><label>AI模型:</label><div class="model-input-group"><select id="aiModel"><option value="gpt-3.5-turbo">GPT-3.5 Turbo</option><option value="gpt-4">GPT-4</option><option value="gpt-4-turbo-preview">GPT-4 Turbo</option><option value="custom">自定义...</option></select><input type="text" id="aiModelCustom" placeholder="输入自定义模型名称"><button type="button" class="model-toggle-btn" data-action="toggle-model-input" hidden=true>自定义</button></div></div>
                                 <div class="form-row"><div class="form-group" style="flex:1"><label>最大Token数:</label><input type="number" id="aiMaxTokens" value="2000"></div><div class="form-group" style="flex:1"><label>温度值 (0-2):</label><input type="number" id="aiTemperature" value="0.7" step="0.1"></div></div>
                                 <div class="form-group"><label>我的要求:</label><textarea id="aiCustomRequirements" placeholder="输入对AI回复的特殊要求，例如：回答简短一点、使用中文回复、专业术语解释等" rows="3"></textarea><small>这些要求将会附加到每个AI请求中，帮助AI更好地理解您的需求</small></div>
@@ -2887,6 +2889,7 @@
                 enableAI: document.getElementById('enableAI').checked,
                 aiDisplayMode: document.getElementById('aiDisplayMode').value,
                 aiBaseUrl: document.getElementById('aiBaseUrl').value.trim(),
+                aiApiFormat: document.getElementById('aiApiFormat').value,
                 aiModel: getSelectedModel(),
                 aiMaxTokens: document.getElementById('aiMaxTokens').value,
                 aiTemperature: document.getElementById('aiTemperature').value,
@@ -2965,6 +2968,7 @@
             document.getElementById('enableAI').checked = profile.enableAI !== false;
             if (profile.aiDisplayMode) document.getElementById('aiDisplayMode').value = profile.aiDisplayMode;
             if (profile.aiBaseUrl) document.getElementById('aiBaseUrl').value = profile.aiBaseUrl;
+            document.getElementById('aiApiFormat').value = profile.aiApiFormat || 'auto';
             if (profile.aiModel) {
                 const preset = ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo-preview'].includes(profile.aiModel);
                 document.getElementById('aiModel').value = preset ? profile.aiModel : 'custom';
@@ -3169,6 +3173,7 @@
 	            const config = validateConfigData({
                 aiApiKey: document.getElementById('aiApiKey').value.trim(),
                 aiBaseUrl: document.getElementById('aiBaseUrl').value.trim(),
+                aiApiFormat: document.getElementById('aiApiFormat').value,
                 aiModel: getSelectedModel()
 	            });
 
@@ -3221,6 +3226,7 @@
             if(config.autoCommand) document.getElementById('autoCommand').value = config.autoCommand;
             if(config.aiDisplayMode) document.getElementById('aiDisplayMode').value = config.aiDisplayMode;
             if(config.aiBaseUrl) document.getElementById('aiBaseUrl').value = config.aiBaseUrl;
+            document.getElementById('aiApiFormat').value = config.aiApiFormat || 'auto';
             if(config.aiModel) {
                  const preset = ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo-preview'].includes(config.aiModel);
                  document.getElementById('aiModel').value = preset ? config.aiModel : 'custom';

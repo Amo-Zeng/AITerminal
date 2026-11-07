@@ -86,7 +86,7 @@ while (!ctx.signal.aborted) {
 
 交互式 API 还包括 `write(sessionId, text)`、`resize(sessionId, cols, rows)`、`close(sessionId)`。会话只属于创建它的任务，任务结束会关闭；需要持续运行的程序应保持处理器等待。文件 API 是 `files.read(path)` 与 `files.write(path, text)`，写操作接受统一确认策略。执行服务在每次异步确认后重验原始标签、连接和任务身份。
 
-插件任务在独立命令/PTY 中执行，不继承可见交互 Shell 的临时变量或未被应用跟踪的 `cd`。应通过 `context.read()` 核对工作目录，重要路径使用绝对路径。Windows 可见本地终端目标为 WSL Ubuntu，本地 AI 接管目标为宿主 PowerShell；插件不能自行把所属任务切到另一个标签。
+插件任务在独立命令/PTY 中执行，跟随当前标签的终端系统和 Shell。Windows 可见本地终端、AI 接管和插件均使用同一个 WSL 发行版及 Linux 路径。普通本地任务在执行时查询终端进程当前目录；接管工具使用 AI 当前工作目录。它们不继承可见 Shell 的临时变量、别名或 tmux pane 状态。通过 `context.read()` 核对目录，重要路径使用绝对路径；插件不能自行切换所属标签或替换执行环境。显式配置的 MCP stdio 服务仍是宿主进程，其启动命令与终端执行服务分开配置。
 
 取消会先发出信号、释放任务资源；不响应取消的插件宿主会终止。远端进程是否已退出无法总是确认，取消不应当被解释为撤销服务器副作用。
 

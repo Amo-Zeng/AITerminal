@@ -62,6 +62,8 @@ async function main() {
         '/lib/pluginIpc.js',
         '/lib/pluginDownload.js',
         '/lib/aiClient.js',
+        '/lib/aiProtocol.js',
+        '/lib/localEnvironment.js',
         '/lib/shellCommand.js',
         '/index.html',
         '/lib/backendLease.js',
@@ -107,10 +109,11 @@ async function main() {
     if (/security-audit-command|securityAuditApproved/.test(mainSource + '\n' + preloadSource)) {
         fail('renderer-controlled security approval was packaged');
     }
-    if (!mainSource.includes("const distro = (process.env.AIT_TERMINAL_WSL_DISTRO || 'Ubuntu')")) {
+    const environmentSource = asar.extractFile(appAsar, 'lib/localEnvironment.js').toString('utf8');
+    if (!environmentSource.includes("env.AIT_TERMINAL_WSL_DISTRO || 'Ubuntu'")) {
         fail('Windows default WSL Ubuntu configuration is missing');
     }
-    if (!mainSource.includes("const wslArgs = ['-d', distro, '--cd', '~']")) {
+    if (!environmentSource.includes("['-d', environment.wsl.distro, '--cd', environment.cwd") || !mainSource.includes('terminalLaunch(environment)')) {
         fail('Windows WSL terminal arguments are missing');
     }
 

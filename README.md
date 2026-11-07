@@ -50,7 +50,7 @@ AITerminal 是基于 Electron、xterm.js 和 SSH2 的开源桌面终端，将本
 - **插件中心**：参数化工具、模型适配器、标准 MCP、任务事件、面板、配置、插件源和版本恢复；提供独立进程、Cordis 生命周期和开发 SDK。
 - **凭据与连接保护**：SSH 首次连接确认 SHA-256 主机指纹，密钥变化默认阻断；SSH 凭据、模型 Key 和 Webhook URL 由系统加密存储管理。
 
-Windows 的可见本地终端默认是 **WSL Ubuntu**（`wsl.exe -d Ubuntu --cd ~`）；Windows 的 **AI 本地接管**使用宿主 PowerShell 操作 Windows 工作目录。两者是不同环境。
+AI 跟随当前标签的终端环境：Windows 默认本地终端是 **WSL Ubuntu**，AI 本地接管、交互式程序和插件也在同一 Ubuntu 发行版中运行，使用 Linux 路径。Linux / macOS 使用本地 Shell，SSH 标签使用远程环境。启动本地接管时从可见终端当前目录开始；终端关闭或重建后需重新启动接管。
 
 ## 安装与开始使用
 
@@ -64,9 +64,11 @@ Windows 的可见本地终端默认是 **WSL Ubuntu**（`wsl.exe -d Ubuntu --cd 
 
 当前只提供桌面版本，没有 iOS `.ipa`。安装包不要求用户安装 Node.js。
 
-启动后选择本地终端或配置 SSH；使用 AI 时填写自己的兼容模型 API 地址、模型名与 Key。插件中心可从底部“🧩 插件”或 `Ctrl/Cmd+Shift+P` 打开。终端宠物和运维闯关无需模型 Key，也无需连接服务器。
+启动后选择本地终端或配置 SSH；使用 AI 时填写自己的模型 API 地址、模型名与 Key。API 格式支持 **Chat Completions**（`/v1/chat/completions`）、**Responses**（`/v1/responses`）和 **Messages**（`/v1/messages`），可手动选择或根据完整 URL 自动识别，详见 [模型 API 配置](AI_PROVIDERS.md)。插件中心可从底部“🧩 插件”或 `Ctrl/Cmd+Shift+P` 打开。终端宠物和运维闯关无需模型 Key，也无需连接服务器。
 
 ## 一起建设插件生态
+
+欢迎在 [linux.do 社区](https://linux.do/)交流使用体验、AI 运维实践和插件创意，也欢迎通过本仓库的 Issues、Discussions 和 Pull Requests 参与共建。
 
 欢迎开发者贡献运维工具、交互式 CLI 助手、模型适配器、MCP 集成、教学插件、文档和测试。AITerminal 提供自己的插件中心与 SDK，内部借鉴 DeepSeek Harness 的组合方式并使用 Cordis 管理生命周期；已有 DSH/Cordis 插件需按服务接口适配，详见 [SDK](PLUGIN_SDK.md)。
 

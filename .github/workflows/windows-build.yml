@@ -53,6 +53,24 @@ jobs:
       - name: Test configuration modal and Webhook controls
         run: npm run smoke:config-modal
 
+      - name: Test AI protocol IPC through Electron
+        if: runner.os != 'Linux'
+        run: npm run smoke:ai-protocols
+
+      - name: Test AI protocol IPC through Electron under Xvfb
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run smoke:ai-protocols
+
+      # Hosted Windows runners do not provision an initialized Ubuntu distro.
+      # Windows -> WSL is covered by smoke:local-environment on a WSL-ready host.
+      - name: Test native terminal and AI execution environment
+        if: runner.os == 'macOS'
+        run: npm run smoke:local-environment
+
+      - name: Test native terminal and AI execution environment under Xvfb
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run smoke:local-environment
+
       - name: Test terminal clipboard shortcuts through Electron IPC
         if: runner.os != 'Linux'
         run: npm run smoke:clipboard
