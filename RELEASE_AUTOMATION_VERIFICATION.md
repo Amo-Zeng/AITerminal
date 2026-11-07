@@ -16,4 +16,12 @@
 - `npm test`：171 项，170 通过、1 项按平台跳过、0 失败。
 - 工作流 YAML 可解析；`publish` 明确依赖 `build`，写权限只授予发布 job。
 - `npm run security:scan` 与 `git diff --check` 通过；模型、SSH、Webhook 等个人凭据不参与发布。
-- 发布完成后核对 `/releases/latest`、版本标签源码和公开附件摘要，再记录最终 CI 链接。
+
+## 正式发布结果
+
+- [三平台构建与自动发布](https://github.com/Amo-Zeng/AITerminal/actions/runs/42361816034)全部成功，包括打包后的应用启动验证；源码为 `c1ac1f2c0828086295139fff7c5ba4271720f64b`。
+- [v1.6.0 正式下载](https://github.com/Amo-Zeng/AITerminal/releases/tag/v1.6.0)已公开，[最新下载入口](https://github.com/Amo-Zeng/AITerminal/releases/latest)已匿名确认跳转到该版本。
+- 发布时间为 2026-11-07 18:00:51（北京时间）。版本标签和公开的源码记录均指向上述构建源码。
+- Windows x64 安装程序、Linux x64 AppImage、macOS arm64 DMG 的公开下载链接均在未登录状态返回 HTTP 200，并指向 GitHub 附件下载服务。
+- 发布附件共 8 个：三平台安装包、三份平台 SBOM、`SHA256SUMS.txt` 和 `release-provenance.json`。
+- 已匿名下载校验和及源码记录，验证下载内容的 SHA-256；校验和中全部附件摘要与 GitHub 返回的摘要一致。此处验证的是公开下载可达性与完整性，三平台应用启动由上面的原生 CI 任务验证。
