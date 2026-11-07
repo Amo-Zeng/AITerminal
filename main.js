@@ -2791,7 +2791,7 @@ ipcMain.handle('ai-test-connection', async (event, config, tabId) => {
         }
 
         if (!testConfig.apiKey) {
-            const stored = loadStoredSecrets(config);
+            const stored = loadStoredSecrets({ ...config, aiBaseUrl: testConfig.baseUrl });
             testConfig.apiKey = stored.ai?.apiKey || null;
         }
         validateAiConfig(testConfig);

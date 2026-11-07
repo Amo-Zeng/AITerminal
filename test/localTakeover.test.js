@@ -63,3 +63,20 @@ test('switching provider endpoints never reuses the previous API key', () => {
     context.applyAiConfig({}, { aiApiKey: 'new-provider-fixture', aiBaseUrl: config.baseUrl, aiApiFormat: 'messages' });
     assert.equal(config.apiKey, 'new-provider-fixture');
 });
+
+test('connection-test IPC looks up credentials for its resolved endpoint without modifying the tab', async () => {
+    const handlers = new Map(), config = { baseUrl: 'https://current.example/v1/messages', apiKey: null }, scopes = [];
+    const context = vm.createContext({
+        ipcMain: { handle: (name, fn) => handlers.set(name, fn) }, getWindowConnectionInfo: () => ({}), getAiConfig: () => config,
+        normalizeApiFormat: require('../lib/aiProtocol').normalizeApiFormat, apiSecretScope: value => value,
+        validateAiConfig: value => value, handleAiTestCommand: async (_owner, value) => value,
+        loadStoredSecrets: value => { scopes.push(value.aiBaseUrl); return { ai: { apiKey: 'scoped-fixture' } }; }
+    });
+    vm.runInContext(declaration("ipcMain.handle('ai-test-connection'", '// 流式AI命令处理'), context);
+    const testConnection = handlers.get('ai-test-connection');
+    assert.equal((await testConnection({}, {}, 'tab-1')).apiKey, 'scoped-fixture');
+    assert.equal(scopes[0], config.baseUrl);
+    config.apiKey = 'previous-fixture';
+    assert.equal((await testConnection({}, { aiBaseUrl: 'https://other.example/v1/responses' }, 'tab-1')).apiKey, 'scoped-fixture');
+    assert.equal(scopes[1], 'https://other.example/v1/responses'); assert.equal(config.apiKey, 'previous-fixture');
+});
