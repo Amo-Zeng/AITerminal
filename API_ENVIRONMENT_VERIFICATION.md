@@ -26,6 +26,8 @@
 
 Windows 本机验证使用 Windows Node/ConPTY 启动真实 WSL；Linux 验证使用 Electron。macOS 的 `/private/tmp` 路径别名已纳入 smoke 判定；macOS 与完整安装包验证由三平台 GitHub Actions 执行，不能用 Linux 结果代替。
 
+首轮三平台 CI 的 Linux/macOS 构建通过；Windows 插件 smoke 暴露旧测试错误地假定没有活动 WSL 后端也能读取终端上下文。本地以立即退出的 Shell 复现后，测试改为显式验证后端关闭时拒绝读取/执行，而配置、模型插件和离线宠物/闯关继续工作；没有放宽产品的目标绑定检查。可用 `npm run smoke:plugin-runtime -- --without-terminal` 单独复现无后端检查。
+
 ## 社区 PR
 
 [PR #8](https://github.com/Amo-Zeng/AITerminal/pull/8) 已审查并合并为 `e555d0d`，保留贡献者提交。合并前修复离线示例依赖活动终端、未确认清空导致面板丢内容、状态容量上界与无差别重试，并增加真实插件进程测试。PR 独立验证为 146 项测试（145 通过、1 跳过），TypeScript 严格检查、开发目录验证、打包及密钥扫描通过。
