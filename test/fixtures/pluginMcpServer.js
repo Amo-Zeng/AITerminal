@@ -1,0 +1,10 @@
+'use strict';
+const { Server } = require('@modelcontextprotocol/sdk/server/index.js');
+const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
+const { ListToolsRequestSchema, CallToolRequestSchema, ListResourcesRequestSchema, ReadResourceRequestSchema } = require('@modelcontextprotocol/sdk/types.js');
+const server = new Server({ name: 'fixture', version: '1.0.0' }, { capabilities: { tools: {}, resources: {} } });
+server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: [{ name: 'echo_input', description: 'Echo fixture input', inputSchema: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] }, annotations: { destructiveHint: false } }] }));
+server.setRequestHandler(CallToolRequestSchema, async request => ({ content: [{ type: 'text', text: request.params.arguments.text }] }));
+server.setRequestHandler(ListResourcesRequestSchema, async () => ({ resources: [{ uri: 'fixture://document', name: 'fixture document' }] }));
+server.setRequestHandler(ReadResourceRequestSchema, async () => ({ contents: [{ uri: 'fixture://document', text: 'resource fixture' }] }));
+server.connect(new StdioServerTransport()).catch(() => process.exit(1));

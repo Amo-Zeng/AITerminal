@@ -1,0 +1,50 @@
+name: 插件共建提案 / Plugin proposal
+description: 设计或分享一个 AITerminal 插件 / Propose or share an AITerminal plugin.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 解决什么问题 / User need
+      description: 描述使用者、具体场景和预期效果 / Who needs this and what should it do?
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: 主要类型 / Primary extension type
+      options:
+        - 运维工具或工作流 / Operations tool or workflow
+        - 模型适配器 / Model adapter
+        - MCP 集成 / MCP integration
+        - 任务事件与通知 / Events and notifications
+        - 面板、教学或趣味插件 / Panel, learning or fun plugin
+        - SDK 与开发工具 / SDK or developer tooling
+    validations:
+      required: true
+  - type: textarea
+    id: design
+    attributes:
+      label: 方案与交互 / Design
+      description: 工具输入、面板、事件、依赖、支持的平台和 Shell；可链接原型或参考项目。
+    validations:
+      required: true
+  - type: textarea
+    id: capabilities
+    attributes:
+      label: 权限与数据 / Capabilities and data flow
+      description: 是否执行命令、修改文件、连接外部服务或发送模型请求？如何审计、取消并按标签隔离？不要填写真实凭据。
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收方式 / Acceptance criteria
+      description: 可重复的演示、失败场景、双标签和停用/取消测试；说明能否离线运行。
+    validations:
+      required: true
+  - type: textarea
+    id: contribution
+    attributes:
+      label: 参与方式与许可 / Contribution and license
+      description: 是否计划实现、需要何种协助、源码地址及第三方依赖许可 / Implementation plans, help needed, source and license.

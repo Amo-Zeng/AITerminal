@@ -1,0 +1,35 @@
+[
+  {
+    "schemaVersion": 1, "id": "aiterminal.system-health", "name": "系统巡检", "version": "1.0.0",
+    "description": "检查主机负载、内存、磁盘及网络状态。先收集证据，再解释瓶颈与修复建议。", "author": "AITerminal", "license": "Apache-2.0", "tags": ["运维", "诊断"],
+    "instructions": "诊断时先确认目标主机和操作系统。先获取负载、内存和磁盘证据，再定位进程；避免把单次采样当作持续问题。修改前描述影响并准备回滚，修复后复测。不得输出凭据或读取私钥。",
+    "actions": [
+      {"id": "overview", "title": "主机概况", "commands": {"posix": "uname -a; uptime; df -h", "powershell": "Get-CimInstance Win32_OperatingSystem | Select-Object Caption,Version,FreePhysicalMemory,TotalVisibleMemorySize; Get-PSDrive -PSProvider FileSystem"}},
+      {"id": "processes", "title": "进程快照", "commands": {"posix": "ps -eo pid,ppid,pcpu,pmem,comm | head -40", "powershell": "Get-Process | Sort-Object CPU -Descending | Select-Object -First 20 Id,ProcessName,CPU,WorkingSet"}}
+    ]
+  },
+  {
+    "schemaVersion": 1, "id": "aiterminal.docker", "name": "Docker 运维", "version": "1.0.0",
+    "description": "查看容器、镜像和资源占用，帮助定位容器故障。", "author": "AITerminal", "license": "Apache-2.0", "tags": ["Docker", "运维"],
+    "instructions": "先确认 Docker context 和目标主机，再检查容器状态、退出码和日志。日志可能包含敏感信息，只引用排障所需片段。重建、清理卷或删除资源前确认数据持久化与备份；不要自动执行 prune。",
+    "actions": [
+      {"id": "containers", "title": "查看全部容器", "commands": {"posix": "docker ps -a", "powershell": "docker ps -a"}},
+      {"id": "usage", "title": "资源用量快照", "commands": {"posix": "docker stats --no-stream", "powershell": "docker stats --no-stream"}}
+    ]
+  },
+  {
+    "schemaVersion": 1, "id": "aiterminal.git-review", "name": "Git 变更审查", "version": "1.0.0",
+    "description": "查看工作树和变更概要，保护未提交工作并给出有证据的审查意见。", "author": "AITerminal", "license": "Apache-2.0", "tags": ["Git", "开发"],
+    "instructions": "先检查分支和工作树，尊重用户已有修改。审查以正确性、数据丢失、兼容性和可验证缺陷为主。不得未经授权 reset --hard、clean、覆盖工作树或强推。提交前检查 diff 和秘密，不把敏感值写入日志。",
+    "actions": [
+      {"id": "status", "title": "工作树状态", "commands": {"posix": "git status --short --branch", "powershell": "git status --short --branch"}},
+      {"id": "diff", "title": "变更概要", "commands": {"posix": "git diff --stat; git diff --cached --stat", "powershell": "git diff --stat; git diff --cached --stat"}}
+    ]
+  },
+  {
+    "schemaVersion": 1, "id": "aiterminal.interactive-cli", "name": "交互式 CLI 助手", "version": "1.0.0",
+    "description": "为 Codex、REPL 和交互式终端提供启动、等待、按键与退出的操作规范。", "author": "AITerminal", "license": "Apache-2.0", "tags": ["Codex", "交互"],
+    "instructions": "交互式 CLI 用 interactive_start 启动，用 interactive_wait_for 等待可见提示，用 interactive_key 或 interactive_ctrl 操作菜单。不要把控制字符当作普通 shell 命令，不要在程序未准备好时连续灌入输入。一次操作后观察反馈。不要代替用户接受新授权、账单或登录要求。完成后验证结果并合理退出会话。",
+    "actions": [{"id": "codex-version", "title": "检查 Codex 版本", "commands": {"posix": "codex --version", "powershell": "codex --version"}}]
+  }
+]

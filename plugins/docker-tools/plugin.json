@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 2,
+  "id": "aiterminal.docker-tools",
+  "name": "Docker 工作台",
+  "version": "1.0.0",
+  "description": "参数化容器操作、容器表格和持续日志；每个标签连接自己的执行目标。",
+  "author": "AITerminal",
+  "license": "Apache-2.0",
+  "runtime": "node",
+  "entry": "index.js",
+  "engines": { "aiterminal": ">=1.4.0", "pluginApi": "^1.0.0" },
+  "permissions": ["terminal.execute", "terminal.interactive", "context.read"],
+  "tags": ["Docker", "运维", "工作流"],
+  "instructions": "使用容器列表获取准确 ID 后再进行修改。日志工具支持 follow，用户可在插件中心取消。",
+  "configSchema": { "type": "object", "properties": {
+    "label": { "type": "string", "title": "环境名称", "default": "Docker", "maxLength": 80 },
+    "context": { "type": "string", "title": "Docker context（留空使用默认）", "default": "", "maxLength": 100 },
+    "tail": { "type": "integer", "title": "默认日志行数", "default": 100, "minimum": 1, "maximum": 1000 }
+  } },
+  "panels": [{ "id": "containers", "title": "容器" }, { "id": "environment", "title": "环境" }],
+  "tools": [
+    { "id": "environment", "title": "查看环境", "description": "查看所属标签和环境配置，无需安装 Docker。" },
+    { "id": "list", "title": "容器列表", "description": "查询全部容器并更新面板。" },
+    { "id": "restart", "title": "重启容器", "description": "重启指定容器；执行前经过高危审计。", "inputSchema": { "type": "object", "properties": { "container": { "type": "string", "title": "容器 ID / 名称", "maxLength": 128 } }, "required": ["container"] } },
+    { "id": "logs", "title": "容器日志", "description": "读取日志，可持续跟随输出直到取消。", "timeoutMs": 3600000, "inputSchema": { "type": "object", "properties": { "container": { "type": "string", "title": "容器 ID / 名称", "maxLength": 128 }, "follow": { "type": "boolean", "title": "持续跟随", "default": false } }, "required": ["container"] } },
+    { "id": "inspect", "title": "容器巡检", "description": "收集容器状态和最近日志，输出完整巡检证据。", "inputSchema": { "type": "object", "properties": { "container": { "type": "string", "maxLength": 128 } }, "required": ["container"] } }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 2, "id": "aiterminal.model-policy", "name": "模型策略", "version": "1.0.0",
+  "description": "按标签选择模型别名和温度，通过宿主使用已配置服务及凭据，支持流式回复。", "author": "AITerminal", "license": "Apache-2.0",
+  "runtime": "node", "entry": "index.js", "engines": { "aiterminal": ">=1.4.0", "pluginApi": "^1.0.0" },
+  "permissions": ["models.request"], "tags": ["模型", "AI"],
+  "configSchema": { "type": "object", "properties": { "model": { "type": "string", "title": "模型名称（留空沿用连接配置）", "default": "", "maxLength": 100 }, "temperature": { "type": "number", "title": "温度", "default": 0.3, "minimum": 0, "maximum": 2 } } },
+  "models": [{ "id": "configured", "title": "使用插件模型策略" }]
+}

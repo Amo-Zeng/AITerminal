@@ -1,0 +1,135 @@
+{
+  "name": "aiterminal",
+  "version": "1.5.1",
+  "description": "AI驱动的智能终端 - 支持本地终端与SSH远程管理",
+  "main": "main.js",
+  "scripts": {
+    "postinstall": "node scripts/prepareNativeDependencies.js",
+    "start": "node scripts/start.js",
+    "test": "node scripts/doctor.js --syntax-only && node --test test/*.test.js",
+    "doctor": "node scripts/doctor.js",
+    "security:scan": "node scripts/checkSecrets.js",
+    "smoke:config-modal": "node scripts/configModalSmoke.js",
+    "smoke:clipboard": "node scripts/clipboardSmoke.js",
+    "smoke:terminal": "node scripts/terminalInteractionSmoke.js",
+    "smoke:tmux": "node scripts/terminalInteractionSmoke.js --tmux",
+    "smoke:plugins": "node scripts/pluginCenterSmoke.js",
+    "smoke:plugin-runtime": "node scripts/pluginRuntimeSmoke.js",
+    "smoke:notifications": "node scripts/notificationSmoke.js",
+    "plugin:dev": "node scripts/pluginDev.js",
+    "smoke:renderer-security": "node scripts/rendererSecuritySmoke.js",
+    "smoke:pty": "electron --no-sandbox scripts/ptySmoke.js",
+    "smoke:package-startup": "node scripts/packageStartupSmoke.js",
+    "publish:github-build": "node scripts/publishGitHubBuild.js",
+    "pack": "electron-builder",
+    "build:win": "electron-builder --win --x64 --publish never",
+    "build:mac:unsigned": "electron-builder --mac -c.mac.identity=null --publish never",
+    "build:linux": "electron-builder --linux --publish never",
+    "verify:win-package": "node scripts/verifyWindowsPackage.js release/win-unpacked",
+    "verify:package-source": "node scripts/verifyPackageSource.js",
+    "hash:release": "node scripts/hashArtifacts.js release",
+    "sbom:release": "node scripts/generateSbom.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Amo-Zeng/AITerminal.git"
+  },
+  "keywords": [
+    "AI",
+    "AI assistant",
+    "Terminal",
+    "Local Terminal",
+    "SSH"
+  ],
+  "author": "Amo Zeng",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/Amo-Zeng/AITerminal",
+  "dependencies": {
+    "@highlightjs/cdn-assets": "11.11.1",
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "@xterm/addon-fit": "0.10.0",
+    "@xterm/addon-unicode11": "0.9.0",
+    "@xterm/addon-web-links": "0.11.0",
+    "@xterm/xterm": "5.5.0",
+    "ajv": "8.20.0",
+    "cordis": "4.0.0-rc.12",
+    "dompurify": "3.4.17",
+    "katex": "0.16.22",
+    "marked": "15.0.12",
+    "node-pty": "^1.1.0",
+    "semver": "7.7.4",
+    "ssh2": "^1.15.0"
+  },
+  "devDependencies": {
+    "electron": "^42.9.1",
+    "electron-builder": "^26.15.3"
+  },
+  "overrides": {
+    "cpu-features": "0.0.11",
+    "nan": "2.19.0"
+  },
+  "build": {
+    "productName": "AITerminal",
+    "appId": "com.sci-chat.aiterminal",
+    "copyright": "Copyright © Amo Zeng",
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true,
+      "loadBrowserProcessSpecificV8Snapshot": false,
+      "grantFileProtocolExtraPrivileges": true
+    },
+    "directories": {
+      "output": "release/"
+    },
+    "extraResources": [
+      {
+        "from": "LICENSE",
+        "to": "LICENSE-AITerminal.txt"
+      },
+      {
+        "from": "THIRD_PARTY_NOTICES.md",
+        "to": "THIRD_PARTY_NOTICES.md"
+      }
+    ],
+    "files": [
+      "**/*",
+      "!main.jsc",
+      "!compile.js",
+      "!release/**",
+      "!.fix_display.md.swp",
+      "!.index.html.swp",
+      "!tmp_rovodev_*",
+      "!*.md",
+      "!scripts/**",
+      "!test/**",
+      "!**/node_modules/bytenode/**",
+      "!**/node_modules/cpu-features/build/**"
+    ],
+    "asarUnpack": [
+      "**/node_modules/node-pty/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico",
+      "artifactName": "${productName}-${version}-${arch}-Setup.${ext}"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "build/icon.icns",
+      "category": "public.app-category.developer-tools"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": true
+    }
+  }
+}

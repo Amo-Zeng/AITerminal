@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "id": "aiterminal.ops-quest",
+  "name": "运维闯关",
+  "version": "1.0.0",
+  "description": "把排障变成解谜：8 个真实场景改编的离线关卡，读证据、选下一步、解锁徽章。",
+  "author": "AITerminal",
+  "license": "Apache-2.0",
+  "runtime": "node",
+  "entry": "index.js",
+  "engines": { "aiterminal": ">=1.5.0", "pluginApi": "^1.1.0" },
+  "permissions": [],
+  "tags": ["趣味", "学习", "运维", "解谜"],
+  "instructions": "这是离线模拟题，题内命令只用于解释，不在真实主机执行。让用户先阅读证据并作答，再展示解析；不要替用户刷分。",
+  "configSchema": { "type": "object", "properties": {
+    "category": { "type": "string", "title": "关卡分类", "enum": ["全部", "Linux", "容器与网络", "Git与终端"], "default": "全部" }
+  } },
+  "panels": [{ "id": "quest", "title": "当前关卡" }, { "id": "score", "title": "冒险手册" }],
+  "tools": [
+    { "id": "next", "title": "开始 / 下一关", "description": "按分类挑选未完成关卡；未作答时仍显示当前题，避免误点跳过。" },
+    { "id": "hint", "title": "给我一点提示", "description": "给出排查方向；使用提示后本题最高 5 分。" },
+    { "id": "answer", "title": "提交答案", "description": "提交 A/B/C/D，显示证据解析。首次答对得 10 分，提示后答对得 5 分；每题只计分一次。", "inputSchema": {
+      "type": "object", "properties": { "choice": { "type": "string", "title": "你的选择", "enum": ["A", "B", "C", "D"] } }, "required": ["choice"]
+    } },
+    { "id": "score", "title": "查看冒险手册", "description": "查看本标签完成进度、积分和已解锁徽章。" },
+    { "id": "reset", "title": "重新挑战", "description": "清空本标签答题进度，重新开始。", "inputSchema": {
+      "type": "object", "properties": { "confirm": { "type": "boolean", "title": "确认清空本标签闯关进度", "default": false } }
+    } }
+  ]
+}

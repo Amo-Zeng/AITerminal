@@ -1,247 +1,99 @@
-# AITerminal 🚀
+<p align="center"><img src="build/icon.png" alt="AITerminal logo" width="112"></p>
 
-<div align="center">
+# AITerminal
 
-![AITerminal Logo](./logo.svg)
+[中文](README.md) · [Downloads](https://github.com/Amo-Zeng/AITerminal/releases) · [Plugin quickstart](PLUGIN_QUICKSTART.md) · [Contributing](CONTRIBUTING.md) · [Discussions](https://github.com/Amo-Zeng/AITerminal/discussions)
 
-**AI-powered intelligent terminal - making command line operations simpler and smarter!**
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+[![Cross-platform build](https://github.com/Amo-Zeng/AITerminal/actions/workflows/windows-build.yml/badge.svg)](https://github.com/Amo-Zeng/AITerminal/actions/workflows/windows-build.yml)
 
-[![Windows](https://img.shields.io/badge/Platform-Windows-blue.svg)](https://github.com/Amo-Zeng/AITerminal/releases)
-[![Linux](https://img.shields.io/badge/Platform-Linux-orange.svg)](https://github.com/Amo-Zeng/AITerminal/releases)
-[![macOS](https://img.shields.io/badge/Platform-macOS-lightgrey.svg)](https://github.com/Amo-Zeng/AITerminal/releases) 
-[![Version](https://img.shields.io/badge/Version-1.0.0-green.svg)](https://github.com/Amo-Zeng/AITerminal/releases)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Downloads](https://img.shields.io/github/downloads/Amo-Zeng/AITerminal/total.svg)](https://github.com/Amo-Zeng/AITerminal/releases)
+**Use AI to operate local computers and remote servers, and turn your operations knowledge into plugins.**
 
-</div>
+AITerminal is an open-source desktop terminal built with Electron, xterm.js and SSH2. It combines local PTYs, SSH, AI conversations, interactive command execution and a Plugin Center. The source is licensed under **Apache License 2.0** and runs on Windows, Linux and macOS.
 
-## 📖 Project Introduction
+## Features
 
-AITerminal is a revolutionary cross-platform (Windows, Linux, macOS) intelligent terminal assistant that seamlessly integrates a powerful SSH client with advanced AI assistant features. Through an intuitive interface and natural language interaction, it makes terminal operations easier and smarter.
+- Local and SSH terminals with real PTY support for Codex, Vim, tmux and other interactive tools.
+- Independent connections, AI settings/history, execution state, output, plugins and terminal dimensions for every tab.
+- AI operations on local, remote or mixed targets; confirmation before recognized high-risk commands, with optional trust for a verified SSH server identity.
+- `Ctrl+Shift+C/V` clipboard shortcuts and Enter to copy and clear a selection. Right click copies a selection or pastes; tmux/Vim mouse tracking receives mouse/wheel input, with Shift+right click for the local clipboard. Enable tmux mouse mode with `set -g mouse on`.
+- HTTPS Webhooks for task results, program exits and output keyword matches. Use “🔔 Run and notify” for manual interactive commands. Case sensitivity, cooldowns and redacted excerpts are configurable; see [notification details](WEBHOOKS.md).
+- A Plugin Center with parameterized tools, model adapters, standard MCP, task events, panels, configuration, catalogs and version recovery. Code plugins use dedicated processes and a Cordis lifecycle.
+- SSH host fingerprint verification and platform-encrypted storage for SSH credentials, model API keys and Webhook URLs.
 
-### ✨ Core Features
+The visible local terminal on Windows defaults to **WSL Ubuntu** (`wsl.exe -d Ubuntu --cd ~`). **Local AI takeover** on Windows uses the host PowerShell environment to operate on Windows working directories. These are separate environments.
 
-- 🤖 **AI-powered**: Built-in powerful AI assistant supporting smart Q&A, error diagnosis, natural language to command conversion, and more.
-- 🤖 **AI Takeover Mode**: AI can autonomously develop software based on user needs.
-- 🔗 **SSH Client**: Provides stable and efficient SSH connections, supports file transfer and remote file management.
-- 🗣️ **Natural Interaction**: Supports Chinese natural language command input, lowering the barrier to command line usage.
-- ⚡ **Smart Conversion**: AI automatically converts natural language into system commands for direct execution.
-- 🎨 **Modern Interface**: Simple and beautiful UI design, supports various themes and font customization.
-- 🛡️ **Secure and Reliable**: Built-in security check mechanism to ensure operational safety.
-- 📚 **Learning Ability**: Continuously optimizes AI models to provide more accurate and personalized suggestions.
+## Install
 
-## 🎯 Main Functions
+Download an **AITerminal** package from [GitHub Releases](https://github.com/Amo-Zeng/AITerminal/releases) and verify the accompanying SHA-256 checksums. Version 1.5.1 contains this open-source update and Plugin API 1.1; older installers do not contain the latest plugins and program notifications.
 
-<table>
-<tr>
-<td width="25%">
+| Platform | Package | Requirements |
+| --- | --- | --- |
+| Windows x64 | `.exe` installer | WSL and a distribution named `Ubuntu` for the local terminal; run `wsl --install -d Ubuntu` in an administrator terminal and finish Ubuntu initialization |
+| Linux x64 | `.AppImage` | Make the file executable; use FUSE or AppImage extraction mode |
+| macOS Apple Silicon | `.dmg` | Current CI builds are arm64, unsigned and not notarized; verify the source before allowing launch through system settings |
 
-### 🤖 AI Assistant
-- Smart Q&A and suggestions
-- Error diagnosis and repair
-- Natural language to command
-- System analysis and optimization
+There is no iOS `.ipa` target. Packaged applications do not require Node.js.
 
-</td>
-<td width="25%">
-   
-### 🔗 SSH Client
-- Intuitive connection management
-- Drag-and-drop file upload
-- Customizable common commands
-- Direct command sending to remote server
-- Remote file browsing (`rfe`)
-- Click to open remote files (`myls`)
+Open a local terminal or configure SSH. For AI features, supply your compatible model API endpoint, model name and key. Open the Plugin Center from the bottom toolbar or `Ctrl/Cmd+Shift+P`. Terminal Pet and Ops Quest work without model credentials or a server connection.
 
-</td>
-<td width="25%">
+## Build the plugin ecosystem with us
 
-### ⚙️ Highly Customizable
-- Terminal themes and fonts
-- AI model and API configuration
-- Custom AI prompts
-- Cursor style and scroll lines
-- Auto login and command execution
+Contribute operations tools, interactive CLI helpers, model adapters, MCP integrations, teaching plugins, documentation or tests. AITerminal owns its package format and SDK, drawing inspiration from DeepSeek Harness and using Cordis internally. Existing DSH/Cordis plugins need service-level adaptation; see the [SDK guide](PLUGIN_SDK.md).
 
-</td>
-<td width="25%">
-   
-### 🚀 Productivity Tools
-- Hotkey support
-- Session save and load
-- Streaming AI replies
-- Split-screen display for AI replies
+| Bundled examples | What to explore |
+| --- | --- |
+| System health, Docker, Git review, interactive CLI | Declarative instructions and static commands |
+| [Docker Workbench](plugins/docker-tools/index.js) | Parameterized tools, inspections and interactive logs |
+| [Task Notifier](plugins/task-notifier/index.js), [Model Policy](plugins/model-policy/index.js) | Task events, Webhooks and model adapters |
+| [Terminal Pet](plugins/terminal-pet/index.js), [Ops Quest](plugins/ops-quest/index.js) | Offline panels, session state and events |
+| [Git Time Machine](plugins/git-time-machine/index.js) | Read-only Git timelines and optional AI stories |
 
-</td>
-</tr>
-</table>
+Start with the [contribution guide](CONTRIBUTING.md), try the [plugin quickstart](PLUGIN_QUICKSTART.md), or open a [plugin proposal](https://github.com/Amo-Zeng/AITerminal/issues/new?template=plugin_proposal.yml). The [roadmap](ROADMAP.md) lists concrete collaboration opportunities. Small examples, translations and reproducible bug reports are welcome.
 
-## 💡 Usage Examples
+## Run from source
 
-### AI Q&A and Suggestions
+Use Node.js 22+, npm, and native module build tools if prebuilt modules are unavailable. Do not share `node_modules` between operating systems.
 
-Ask the AI directly for technical solutions, operational suggestions, or code snippets.
-
+```bash
+git clone https://github.com/Amo-Zeng/AITerminal.git
+cd AITerminal
+npm ci
+npm start
 ```
-User input: "How to check memory usage on Linux?"
-AI reply: "You can use the `free -h` command to check memory usage on Linux..."
+
+Create a plugin outside the checkout:
+
+```bash
+npm run plugin:dev -- new ../hello-aiterminal example.hello
+npm run plugin:dev -- validate ../hello-aiterminal
+npm run plugin:dev -- pack ../hello-aiterminal ../example.hello.aitplugin.json
 ```
-![AI Chat](https://github.com/Amo-Zeng/AITerminal/blob/main/assets/ai-chat.gif?raw=true)
 
-### Natural Language to Command
+Load its development directory in the Plugin Center, preview the installation, enable it for one tab and run the greeting tool. Re-import after changing the development files.
 
-Describe your needs in natural language, and AI will generate the corresponding Linux command for direct execution.
+## Test and build
 
+```bash
+npm test
+npm run security:scan
+npm run doctor
+# Select the command for the target operating system:
+npm run build:win
+npm run build:linux
+npm run build:mac:unsigned
 ```
-User input: "cmd to find all files larger than 100MB"
-AI conversion: find . -type f -size +100M
-Execution result: [List of large files]
-```
-![AI Cmd](https://github.com/Amo-Zeng/AITerminal/blob/main/assets/ai-cmd.gif?raw=true)
 
-### Drag-and-drop File Upload
+The public [Actions workflow](https://github.com/Amo-Zeng/AITerminal/actions/workflows/windows-build.yml) builds all three platforms for pull requests, pushes to `main` / `release/**`, `v*` tags and manual runs. Fork owners can enable Actions in their repositories; no private build repository or model key is required. Checks include locked dependencies, tests, audits, real Electron/plugin/notification smoke tests, source-to-package verification and actual packaged startup. Artifacts include installers, checksums and an SBOM and expire after 14 days; use Releases for durable downloads.
 
-Drag local files to the terminal window to quickly upload them to the remote server.
+See [Contributing](CONTRIBUTING.md) for focused smoke tests and [Releasing](RELEASING.md) for the optional maintainer build helper.
 
-![Drag and Drop Upload](https://github.com/Amo-Zeng/AITerminal/blob/main/assets/drag-upload.gif?raw=true)
+## Documentation and security
 
-### Remote File Browsing and Download
+[AI takeover](AI_TAKEOVER_MODE_README.md) · [Plugin usage](PLUGINS.md) · [SDK reference](PLUGIN_SDK.md) · [Notifications](WEBHOOKS.md) · [Roadmap](ROADMAP.md) · [Changelog](CHANGELOG.md) · [Open-source checks](OPEN_SOURCE_AUDIT.md)
 
-Browse remote file systems visually with the `rfe` command, click to download or enter directories.
+AITerminal executes with the current local or SSH user's permissions. A working directory, command audit or separate plugin process is not an operating-system sandbox. Enable trusted plugins only. Credentials remain session-only when secure storage is unavailable. Report vulnerabilities through [private security reporting](https://github.com/Amo-Zeng/AITerminal/security/advisories/new), following the [security policy](SECURITY.md); do not post keys or sensitive terminal output in public issues. Participants follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 
-![Remote File Explorer](https://github.com/Amo-Zeng/AITerminal/blob/main/assets/rfe.gif?raw=true)
+## License
 
-List remote files with the `myls` command, click to download and open files, view images on the server with one click.
-
-![Remote File Explorer](https://github.com/Amo-Zeng/AITerminal/blob/main/assets/myls.gif?raw=true)
-
-## 🖼️ Software Screenshots
-
-### Main Interface & SSH Connection
-AITerminal’s main interface is simple and intuitive, with clear SSH connection configuration.
-
-![Main Interface](https://github.com/Amo-Zeng/AITerminal/blob/main/assets/ssh-connect.gif?raw=true)
-
-### Split-screen AI Replies
-AI replies support real-time streaming output and are displayed in a separate split-screen area, supporting Markdown, code highlighting, and math formula rendering (formula rendering needs fixing).
-
-![AI Streaming](https://github.com/Amo-Zeng/AITerminal/blob/main/assets/ai-streaming.gif?raw=true)
-
-### Terminal Theme Customization
-Multiple built-in terminal themes to meet your personalized needs.
-
-![Terminal Themes](https://github.com/Amo-Zeng/AITerminal/blob/main/assets/terminal-themes.gif?raw=true)
-
-## 🚀 Quick Start
-
-### Installation Steps
-
-#### Windows
-
-1. **Download Installer**
-   [Download Installer](https://github.com/Amo-Zeng/AITerminal/releases/download/v1.2.0/AITerminal.Setup.1.1.0.exe)
-
-2. **Run Installer**
-   - Double-click `AITerminal.Setup.1.0.0.exe`
-   - Complete installation via the setup wizard
-
-3. **Start the App**
-   - Launch AITerminal from the Start Menu or desktop shortcut
-   - It’s recommended to configure SSH and AI on first run
-
-#### Linux
-
-1. **Download Installer**
-   [Download Installer](https://github.com/Amo-Zeng/AITerminal/releases/download/v1.2.0/AITerminal-1.1.0.AppImage)
-
-2. **Run the App**
-   - Double-click `AITerminal-1.1.0.AppImage` to open and use directly
-
-#### macOS
-
-- [Download Installer](https://github.com/Amo-Zeng/AITerminal/releases/download/v1.2.0/AITerminal-1.1.0-arm64.dmg)
-- sudo xattr -r -d com.apple.quarantine /Applications/AITerminal.app  (If it shows as damaged, this is normal; as per feedback, you need to run this command.)
-
-## 📋 Changelog
-
-#### v1.2.0 (2025.7.12)
-
-- **New: AI takeover mode (similar to gemini-cli)**  
-  Allows AI to freely execute Bash commands in the current and subdirectories, enabling automated development. The AI can make plans and carry them out step by step.
-
-- **Settings pagination**  
-  Settings page now supports pagination for easier navigation and management.
-
-- **Multi-tab support**  
-  Multiple tabs can be opened in the same window for improved multitasking.
-
-#### v1.1.0 (2025.7.8)
-
-##### 🐞 Bug Fixes
-- Fixed copy-paste issue on Mac
-- Fixed bug between model selection and input box
-- `api_url` now supports both `https://api.openai.com` and `https://api.openai.com/v1/chat/completions`
-- Fixed issue where SSH login was required to change other settings
-- Dark mode border color issue fixed
-- Formula rendering supported
-
-##### 🚀 New & Enhanced Features
-- SSH key login supported
-- Custom Bash commands can be set; type `/` to quickly call and send
-- Full multi-turn conversation history display
-- AI answers can include custom requirements (e.g., “please answer briefly”)
-- Added `send` command to send bash commands to remote (e.g., send ls)
-
----
-
-#### v1.0.0 (2025-07-03)
-- 🎉 Initial release
-- ✅ Basic AI command conversion feature
-- ✅ Powerful SSH connection management
-- ✅ Drag-and-drop upload and remote file browsing
-- ✅ Modern UI and theme customization
-- ✅ Security check mechanism
-- ✅ Chinese natural language support
-
-## 🔮 Future Plans
-
-- 🌟 **Open source plan**: Will gradually open source as the project grows
-- 🔧 **Feature extension**: Support for more system operations and tools (e.g., SFTP client, port forwarding)
-- 🌍 **Multi-language support**: Add support for English and other languages
-- 📱 **Cross-platform**: Plan to support macOS and Linux
-- 🤖 **AI enhancement**: Continuously optimize AI models for better accuracy and quality
-- 🔌 **Plugin system**: Support for third-party plugins to enrich the ecosystem
-
-## 🤝 Feedback & Support
-
-We highly value your feedback and suggestions!
-
-### 📞 Contact
-- **Issues**: [GitHub Issues](https://github.com/Amo-Zeng/AITerminal/issues)
-- **Email**: 1019191262@qq.com
-- **QQ Group**: 1053768305
-
-### 🐛 Bug Report
-If you encounter any issues, please report by:
-1. Describing the problem in detail
-2. Providing steps to reproduce
-3. Attaching error screenshots (if any)
-4. Specifying system environment details
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Thanks
-
-Thank you to all users who have provided suggestions and support for this project!
-
----
-
-<div align="center">
-
-**If you find this project helpful, please give us a ⭐ Star!**
-
-[Download latest version](https://github.com/Amo-Zeng/AITerminal/releases) | [Report Issues](https://github.com/Amo-Zeng/AITerminal/issues) | [Feature Suggestions](https://github.com/Amo-Zeng/AITerminal/issues)
-
-</div>
+Copyright © Amo Zeng and AITerminal contributors. Licensed under the [Apache License 2.0](LICENSE). Third-party dependencies retain their own licenses; see [Third-Party Notices](THIRD_PARTY_NOTICES.md).

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 2,
+  "id": "aiterminal.terminal-pet",
+  "name": "终端宠物",
+  "version": "1.0.0",
+  "description": "领养一只陪你运维的猫、狐狸或机器人。任务完成获得经验，失败时陪你排障，还能投喂和摸摸。",
+  "author": "AITerminal",
+  "license": "Apache-2.0",
+  "runtime": "node",
+  "entry": "index.js",
+  "engines": { "aiterminal": ">=1.5.0", "pluginApi": "^1.1.0" },
+  "permissions": [],
+  "tags": ["趣味", "宠物", "陪伴"],
+  "instructions": "用户想看看宠物或休息时使用本插件。宠物仅统计启用后的本标签 AI 接管及其他插件任务，不读取终端内容，也不会自动执行命令。",
+  "configSchema": { "type": "object", "properties": {
+    "name": { "type": "string", "title": "宠物名字", "default": "小栈", "minLength": 1, "maxLength": 24 },
+    "species": { "type": "string", "title": "宠物种类", "enum": ["猫", "狐狸", "机器人"], "default": "猫" }
+  } },
+  "panels": [{ "id": "pet", "title": "我的终端宠物" }],
+  "tools": [
+    { "id": "visit", "title": "看看宠物", "description": "显示宠物、经验、心情和本标签任务记录。" },
+    { "id": "interact", "title": "陪它玩一会儿", "description": "投喂、摸摸或散步，收获一句运维小贴士。", "inputSchema": {
+      "type": "object", "properties": { "action": { "type": "string", "title": "互动", "enum": ["投喂", "摸摸", "散步"], "default": "摸摸" } }
+    } }
+  ]
+}

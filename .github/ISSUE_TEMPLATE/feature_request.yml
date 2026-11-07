@@ -1,0 +1,23 @@
+name: 功能建议 / Feature request
+description: 提出终端、AI 或开发体验的改进 / Suggest an improvement.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 当前遇到的困难 / Problem
+      description: 描述具体使用场景与现有行为 / Describe the use case and current behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议行为 / Proposed behavior
+      description: 期望如何操作、看到什么结果 / What should the user do and see?
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: 验收与替代方案 / Validation and alternatives
+      description: 如何验证收益，是否适合先做成插件 / How to verify the improvement, and whether a plugin could address it.

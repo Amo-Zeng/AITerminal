@@ -1,0 +1,42 @@
+name: 问题反馈 / Bug report
+description: 提供可复现步骤，帮助定位终端、AI 或插件问题 / Report a reproducible issue.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请勿附上 Key、SSH 密码、私钥、Webhook URL 或敏感终端输出。漏洞请使用 Security → Report a vulnerability。
+        Do not include credentials or private terminal output. Use private security reporting for vulnerabilities.
+  - type: input
+    id: version
+    attributes:
+      label: 版本与来源 / Version and source
+      placeholder: "1.5.1 installer, or source commit SHA"
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 环境 / Environment
+      description: OS、架构、本地或 SSH、Shell、WSL/tmux 版本；插件问题包含插件 ID 和版本。
+      placeholder: "Windows 11 x64 / WSL Ubuntu / local terminal / plugin ID and version"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤 / Reproduction
+      description: 包含标签数量、切换/resize 等必要动作，尽量使用非敏感的最小例子。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期与实际结果 / Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 脱敏日志或截图 / Redacted evidence
+      description: 仅提供排障所需信息；可附相关测试结果 / Include relevant test results if available.

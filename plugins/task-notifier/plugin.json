@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 2, "id": "aiterminal.task-notifier", "name": "任务通知与记录", "version": "1.0.0",
+  "description": "按标签记录任务完成和失败，并测试现有 Webhook 的实际投递。", "author": "AITerminal", "license": "Apache-2.0",
+  "runtime": "node", "entry": "index.js", "engines": { "aiterminal": ">=1.4.0", "pluginApi": "^1.0.0" },
+  "permissions": ["notifications.send"], "tags": ["Webhook", "通知"],
+  "configSchema": { "type": "object", "properties": { "prefix": { "type": "string", "title": "通知前缀", "default": "AITerminal", "maxLength": 80 } } },
+  "panels": [{ "id": "latest", "title": "最近任务" }],
+  "tools": [{ "id": "test", "title": "测试 Webhook 投递", "description": "使用连接配置中已保存的 Webhook URL，失败会显示原因。" }]
+}

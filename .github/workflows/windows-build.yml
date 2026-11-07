@@ -1,0 +1,165 @@
+name: Cross-platform build
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main, 'release/**']
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-x64
+            os: windows-2022
+            build_script: build:win
+          - platform: linux-x64
+            os: ubuntu-24.04
+            build_script: build:linux
+          - platform: macos
+            os: macos-15
+            build_script: build:mac:unsigned
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Test renderer content isolation
+        run: npm run smoke:renderer-security
+
+      - name: Test configuration modal and Webhook controls
+        run: npm run smoke:config-modal
+
+      - name: Test terminal clipboard shortcuts through Electron IPC
+        if: runner.os != 'Linux'
+        run: npm run smoke:clipboard
+
+      - name: Test terminal clipboard shortcuts through Electron IPC under Xvfb
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run smoke:clipboard
+
+      - name: Test terminal rendering and mouse interaction
+        if: runner.os != 'Linux'
+        run: npm run smoke:terminal
+
+      - name: Test real tmux panes, resize, and mouse interaction
+        if: runner.os == 'Linux'
+        run: |
+          if ! command -v tmux >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y tmux
+          fi
+          xvfb-run -a npm run smoke:tmux
+
+      - name: Test plugin center and AI context isolation
+        if: runner.os != 'Linux'
+        run: npm run smoke:plugins
+
+      - name: Test plugin center and AI context isolation under Xvfb
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run smoke:plugins
+
+      - name: Scan source for credentials
+        run: npm run security:scan
+
+      - name: Test Webhook delivery, program exits and output matching
+        if: runner.os != 'Linux'
+        run: npm run smoke:notifications
+
+      - name: Test Webhook delivery and terminal notifications under Xvfb
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run smoke:notifications
+
+      - name: Test Cordis plugin host, configuration and model isolation
+        if: runner.os != 'Linux'
+        run: npm run smoke:plugin-runtime
+
+      - name: Test Cordis plugin host under Xvfb
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run smoke:plugin-runtime
+
+      - name: Audit complete dependency tree
+        run: npm audit --audit-level=high
+
+      - name: Verify PTY in Electron
+        if: runner.os != 'Linux'
+        run: npm run smoke:pty
+
+      - name: Verify PTY in Electron under Xvfb
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run smoke:pty
+
+      - name: Build application
+        run: npm run ${{ matrix.build_script }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Verify Windows packaged runtime
+        if: runner.os == 'Windows'
+        run: npm run verify:win-package
+
+      - name: Verify packaged runtime matches this source revision
+        run: npm run verify:package-source
+
+      - name: Start packaged application
+        if: runner.os != 'Linux'
+        run: npm run smoke:package-startup
+
+      - name: Start packaged application under Xvfb
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run smoke:package-startup
+
+      - name: Upload package diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: AITerminal-${{ matrix.platform }}-diagnostics-${{ github.sha }}
+          path: |
+            release/**/*.log
+            release/**/*.json
+            release/**/*-unpacked/**
+            release/mac*/AITerminal.app/**
+          if-no-files-found: ignore
+          retention-days: 3
+
+      - name: Generate checksums
+        run: npm run hash:release
+
+      - name: Generate SBOM
+        run: npm run sbom:release
+
+      - name: Upload unsigned artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: AITerminal-${{ matrix.platform }}-${{ github.sha }}
+          path: |
+            release/*.exe
+            release/*.dmg
+            release/*.AppImage
+            release/SHA256SUMS.txt
+            release/sbom.cdx.json
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 交流与插件共建 / Discussions
+    url: https://github.com/Amo-Zeng/AITerminal/discussions
+    about: 分享想法、使用经验与插件设计 / Share ideas, usage tips and plugin designs.
+  - name: 私密安全报告 / Private security report
+    url: https://github.com/Amo-Zeng/AITerminal/security/advisories/new
+    about: 请勿在公开 Issue 披露漏洞或凭据 / Report vulnerabilities without exposing credentials publicly.
