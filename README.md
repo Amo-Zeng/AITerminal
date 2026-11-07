@@ -11,6 +11,35 @@
 
 AITerminal 是基于 Electron、xterm.js 和 SSH2 的开源桌面终端，将本地 PTY、SSH、AI 对话、交互式命令接管和插件中心放在同一工作界面。源码使用 **Apache License 2.0**，支持 Windows、Linux 和 macOS。
 
+## 功能演示
+
+保留以下早期版本录屏，展示实际操作方式。当前版本的界面布局、标签隔离和权限确认流程已有升级，以当前应用与文档为准。
+
+**自然语言转命令**：描述“查找所有大于 100 MB 的文件”，查看 AI 给出的命令，再按需执行。
+
+![自然语言转命令：输入需求、查看命令建议并执行](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/ai-cmd.gif)
+
+<details>
+<summary>展开更多演示：AI 接管、AI 问答、文件拖拽与主题切换</summary>
+
+**AI 接管任务（2 倍速）**：输入“创建一个介绍广义相对论的炫酷网页”，由 AI 执行开发任务，并继续提出修改要求。
+
+![AI 接管：根据自然语言需求创建网页并追加修改，2 倍速录屏](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/agent_2x.gif)
+
+**AI 问答与建议**：询问如何查看 Linux 内存使用情况，获取解释和命令示例。
+
+![AI 问答：查询 Linux 内存使用方法并查看回复](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/ai-chat.gif)
+
+**文件拖拽与传输**：将本地文件拖入已连接的 SSH 终端，上传后浏览和下载远程文件。
+
+![文件传输：拖拽上传本地文件并浏览、下载远程文件](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/drag-upload.gif)
+
+**终端主题切换**：调整字体和配色，选择适合自己的终端外观。
+
+![终端外观：在配置中切换配色主题](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/terminal-themes.gif)
+
+</details>
+
 ## 能做什么
 
 - **本地与远程终端**：直接打开本地 Shell，或连接 SSH；支持 Codex、Vim、tmux 等交互式程序。

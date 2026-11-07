@@ -11,6 +11,35 @@
 
 AITerminal is an open-source desktop terminal built with Electron, xterm.js and SSH2. It combines local PTYs, SSH, AI conversations, interactive command execution and a Plugin Center. The source is licensed under **Apache License 2.0** and runs on Windows, Linux and macOS.
 
+## Demos
+
+These recordings from earlier versions show the application in use. The current UI, tab isolation and command confirmation flow have since been updated; follow the current application and documentation for exact behavior.
+
+**Natural language to commands**: ask to find files larger than 100 MB, review the suggested command and execute it when needed.
+
+![Natural language to commands: enter a request, review the suggestion and execute it](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/ai-cmd.gif)
+
+<details>
+<summary>More demos: AI takeover, AI chat, file transfers and terminal themes</summary>
+
+**AI takeover (2× speed)**: ask the AI to build a webpage about general relativity, let it carry out the development task and request further changes.
+
+![AI takeover: create and refine a webpage from a natural-language request, at 2× speed](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/agent_2x.gif)
+
+**AI chat and suggestions**: ask how to check Linux memory usage and receive explanations with command examples.
+
+![AI chat: ask about Linux memory usage and read the response](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/ai-chat.gif)
+
+**Drag-and-drop file transfers**: drag a local file into a connected SSH terminal, then browse and download remote files.
+
+![File transfers: upload by dragging, then browse and download remote files](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/drag-upload.gif)
+
+**Terminal themes**: adjust fonts and colors to suit your preferred terminal appearance.
+
+![Terminal appearance: switch color themes in the configuration dialog](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/terminal-themes.gif)
+
+</details>
+
 ## Features
 
 - Local and SSH terminals with real PTY support for Codex, Vim, tmux and other interactive tools.
