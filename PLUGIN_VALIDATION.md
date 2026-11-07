@@ -4,6 +4,8 @@
 
 ## 公开源码与跨平台验证
 
+1.5.1 的 [最终公开 CI](https://github.com/Amo-Zeng/AITerminal/actions/runs/42339871327) 三平台全部成功，源码提交为 `dc77e5495502162c5b64cc7f3ea429f39a8e37ac`。Windows 135 项通过、9 项按平台跳过；Linux/macOS 各 143 项通过、1 项 Windows 专用测试跳过，均为 0 失败。三平台均完成真实插件/通知冒烟、源码一致性和打包后启动门禁。下载入口：[v1.5.1](https://github.com/Amo-Zeng/AITerminal/releases/tag/v1.5.1)；此处后续文档修订不改变安装包中的运行代码。
+
 当前插件源码和 API 1.1 已在公开仓库发布。本地完整回归 143 项通过。首轮 [公开 CI](https://github.com/Amo-Zeng/AITerminal/actions/runs/42339308414) 的 Windows Git 回归在测试仓库初始化时发现 Node 的 `os.devNull` 设备路径不能作为 Git 配置文件；改为测试临时目录中的真实空配置文件，仍隔离用户配置，不跳过 Windows Git 测试。最终安装包及对应成功 CI 以 [公开 Release](https://github.com/Amo-Zeng/AITerminal/releases) 的记录为准。
 
 进一步在本机 Windows PowerShell 5.1 + Windows Node/Git 复现了 `EncodedCommand` 将进度与错误输出序列化为 CLIXML、污染 Git 结果的问题。执行服务改用单个 Unicode `Command` 参数，设置 UTF-8、关闭进度流并保留原生非零退出码。真实 Windows 的 Git 时间线（中文、特殊路径、空仓库、游离 HEAD、模型数据边界）及 PowerShell 输出/退出码/错误文本两项回归全部通过；Linux 插件 5 项与执行/通知 21 项通过，另 1 项 Windows 专用测试按平台跳过。

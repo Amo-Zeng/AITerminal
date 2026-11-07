@@ -1,6 +1,6 @@
 # 程序与输出通知验证
 
-日期：2026-11-07；当前源码增量，尚未发布新的三平台安装包。使用说明见 [WEBHOOKS.md](WEBHOOKS.md)。
+日期：2026-11-07；版本 1.5.1。使用说明见 [WEBHOOKS.md](WEBHOOKS.md)。源码已公开，Windows x64、Linux x64、macOS arm64 的 [公开 CI](https://github.com/Amo-Zeng/AITerminal/actions/runs/42339871327) 全部成功；安装包入口见 [v1.5.1](https://github.com/Amo-Zeng/AITerminal/releases/tag/v1.5.1)。
 
 ## 目标与实现
 
@@ -24,6 +24,6 @@
 
 ## 边界
 
-本轮实际执行环境为 WSL/Linux；Windows/macOS 的同类测试已加入原三平台工作流，尚未重新触发远端构建。Windows CI 不自带用户的 Ubuntu 发行版，其真实 Webhook 冒烟验证配置/HTTPS，交互监控需在装有 Ubuntu 的目标 Windows 上运行。远端退出测试使用可控 SSH 通道，未操作用户实际服务器。
+上述本地验证环境为 WSL/Linux；随后公开 CI 已在 Windows/macOS/Linux 运行相应测试并全部通过。Windows CI 不自带用户的 Ubuntu 发行版，其真实 Webhook 冒烟验证配置/HTTPS，交互监控需在装有 Ubuntu 的目标 Windows 上运行。远端退出测试使用可控 SSH 通道，未操作用户实际服务器。
 
 手动监控需要从“运行并通知”启动；已经运行的任意程序、守护进程化或 tmux 内部作业不自动追踪。输出规则为字面文本，控制序列重绘时保守地隔断片段，不是完整屏幕模拟器。网络中断以及 AITerminal/操作系统被强制终止不能保证投递；远端断线明确报告状态未知。通用脱敏不等价于识别所有业务秘密，输出原文默认关闭。

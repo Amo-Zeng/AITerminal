@@ -23,10 +23,12 @@ LICENSE 为 Apache-2.0，项目元数据与中英文文档保持一致；运行�
 | 凭据与仓库卫生 | `npm run security:scan`、140 个待发布文件的当前凭据匹配检查、`git diff --check` 均通过 |
 | 开发者入口 | 108 个文档相对链接和 5 个 YAML 文件检查通过；插件模板实际生成/验证/打包由回归测试覆盖 |
 | 真实运行 | [插件验证](PLUGIN_VALIDATION.md)、[通知验证](WEBHOOK_VALIDATION.md) 记录了本地 Electron、HTTPS、PTY、tmux 与 Linux 包启动结果 |
-| 公开三平台构建 | [Actions](https://github.com/Amo-Zeng/AITerminal/actions/workflows/windows-build.yml)；以对应提交的实际结果为准，包含打包源码一致性与实际启动门禁 |
+| 公开三平台构建 | [42339871327](https://github.com/Amo-Zeng/AITerminal/actions/runs/42339871327) 全部成功，源码 `dc77e5495502162c5b64cc7f3ea429f39a8e37ac`；Windows 135 通过/9 按平台跳过，Linux/macOS 各 143 通过/1 按平台跳过，均零失败，包含打包源码一致性与实际启动门禁 |
 | 依赖审计 | `npm audit --audit-level=high` 通过；当前仍有 1 low（KaTeX）和 6 moderate（构建依赖链），没有将其描述为零漏洞 |
 
 公开发布的提交、三平台运行与产物信息以 [Release](https://github.com/Amo-Zeng/AITerminal/releases) 及其链接的 Actions 记录为准。安装包只有在对应平台全部门禁通过并核对摘要后才进入 Release。
+
+公开仓库已识别 Apache-2.0，启用 Discussions 与私密漏洞报告。开发者共建邀请见 [Discussion #5](https://github.com/Amo-Zeng/AITerminal/discussions/5)。发布时逐项比较远端树与本地源码，140 个文件及图标内容一致；后续验证文档提交不改变已构建的运行代码。
 
 ## 已实现的边界
 
