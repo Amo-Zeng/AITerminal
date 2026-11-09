@@ -2,7 +2,12 @@
 
 A small read-only plugin that inspects a log file you name: it shows the most
 recent lines, counts a literal keyword, and publishes a plain-text panel. It
-needs no model, no server and no keys, and it never modifies anything.
+needs an active local terminal or SSH connection, but no model key. It does not
+modify the inspected file. Local use needs no server.
+
+This example uses `ctx.files.read`, which reads the file through the host and
+fails if command output exceeds **1 MiB**. It then selects recent lines in
+memory. It is for small text files, not efficient tailing of large production logs.
 
 ## What it shows
 
@@ -10,7 +15,7 @@ needs no model, no server and no keys, and it never modifies anything.
 | --- | --- |
 | Read-only host access: `ctx.files.read` + the `files.read` permission | `index.js`, `plugin.json` |
 | Input validated by the manifest schema before the handler runs | `inputSchema` of the `inspect` tool |
-| Bounded output: last N lines plus a hard 20 000-character cap | `MAX_LINES` / `MAX_CHARS` in `index.js` |
+| Bounded output: last N lines, metadata included in the 20 000-character cap, and a JSON byte cap | `MAX_LINES` / `MAX_CHARS` in `index.js` |
 | Honest diagnostics: file-service errors passed through verbatim | `exitCode !== 0` branch in `index.js` |
 | Local vs SSH target shown on every panel | `ctx.context.read()` in `index.js` |
 | Per-tab state with revision-conflict handling | `record()` in `index.js` |
@@ -27,19 +32,15 @@ npm start
 
 Make a small non-sensitive fixture log (contains nothing real):
 
-- macOS / Linux:
+- macOS / Linux / Windows WSL Ubuntu (run in the visible local terminal):
 
 ```bash
-for i in 1 2 3; do echo "$(date -u +%FT%TZ) INFO demo line $i" >> /tmp/log-inspector-demo.log; done
-echo "$(date -u +%FT%TZ) ERROR demo something broke" >> /tmp/log-inspector-demo.log
+printf '%s\n' 'INFO demo line 1' 'INFO demo line 2' 'INFO demo line 3' 'ERROR demo something broke' > /tmp/log-inspector-demo.log
 ```
 
-- Windows PowerShell:
-
-```powershell
-1..3 | ForEach-Object { Add-Content "$env:TEMP\log-inspector-demo.log" "$(Get-Date -Format o) INFO demo line $_" }
-Add-Content "$env:TEMP\log-inspector-demo.log" "$(Get-Date -Format o) ERROR demo something broke"
-```
+On Windows the visible terminal and plugin run in the same WSL Ubuntu
+environment. Use `/tmp/log-inspector-demo.log` there; Windows files use
+`/mnt/c/...` paths. A host PowerShell `$env:TEMP` path is not a WSL path.
 
 Then in the app:
 
@@ -49,7 +50,8 @@ Then in the app:
 2. Run **Inspect a log file** with the fixture's absolute path and
    `keyword: demo`. The panel names the tab's target and shell (local or
    SSH), the file, the line counts and the keyword hits, followed by the
-   recent lines.
+   recent lines. Counts refer to text actually displayed; when a long line is
+   trimmed the panel says that its first visible line may be partial.
 3. Run it with a missing path or a file you cannot read: the file service's
    own message is shown instead of a generic failure.
 4. Enable the plugin in a second tab and inspect a different file there:
@@ -65,11 +67,14 @@ immutable reviewed snapshot, not a live view of your development files.
 
 - **Read-only:** the only host calls are `context.read`, `files.read`,
   `ui.publish` and `state.read/write`. Nothing is written to the log, no
-  service is restarted, and nothing is sent to a model — there is no
-  `terminal.execute` or `models.request` permission to misuse.
+  service is restarted, and the plugin makes no model requests. When an AI
+  task invokes the tool, its caller receives summary metadata (path and counts),
+  not log content. Manifest permissions describe SDK calls; arbitrary plugin
+  code still has the host user's privileges and is not an OS sandbox.
 - **Bounded:** schema-validated input (1–200 lines, 80-char keyword),
-  a 20 000-character panel cap and a 10-entry state history keep every
-  artifact small.
+  a 20 000-character / 60 000-byte serialized panel cap and at most 10 state
+  summaries (30 000 serialized bytes) keep output within host limits. Unrelated
+  state-write failures are reported; only changed revisions are retried.
 - **Literal matching only:** keywords are counted case-insensitively as plain
   strings; no regex, so input can never turn into a pattern to execute.
 - **Per-tab isolation:** state is scoped to one plugin instance and one tab
@@ -97,11 +102,12 @@ npx -y -p typescript@5.9 tsc --noEmit --allowJs --checkJs --target es2022 --modu
 
 ## Not supported on purpose
 
-- No tail/follow and no scheduled polling: one bounded read per invocation.
-- No whole-file scans: only the most recent lines are read into the panel.
+- No tail/follow or scheduled polling. Each invocation reads a small whole file
+  with the host output limit, then displays its recent lines. Oversized reads fail.
 - No path expansion beyond what the host file service already provides: the
   path must be absolute and valid for the tab's target (on a Windows local
-  tab that is the host PowerShell's view; SSH targets see the remote view).
+  tab that is WSL Ubuntu's view; SSH targets see the remote view). Windows-style
+  paths are accepted only by an explicitly bound PowerShell host integration.
 - No writes, no restarts, no model round-trips — and this example makes no
   request to be bundled into `plugins/catalog.json`; that needs its own
   review.

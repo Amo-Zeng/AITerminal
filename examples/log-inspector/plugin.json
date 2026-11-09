@@ -3,7 +3,7 @@
   "id": "example.log-inspector",
   "name": "Log Inspector",
   "version": "1.0.0",
-  "description": "Read-only English example for Plugin API 1.1: show the last lines of a log file you name, count a literal keyword, and keep everything bounded. No model, no server, no keys.",
+  "description": "Read-only English example for Plugin API 1.1: inspect a small log file, count a literal keyword in displayed text, and keep output bounded. No model key needed.",
   "author": "AITerminal community",
   "license": "Apache-2.0",
   "runtime": "node",
@@ -11,7 +11,7 @@
   "engines": { "aiterminal": ">=1.5.1", "pluginApi": "^1.1.0" },
   "permissions": ["files.read", "context.read"],
   "tags": ["Example", "Logs", "Offline"],
-  "instructions": "Use when the user wants to look at a log file read-only: show its most recent lines and count a literal keyword. The path must be absolute and known to the tab's target (local or SSH); nothing is ever modified, restarted or sent to a model.",
+  "instructions": "Inspect a small log file read-only. The host reads the file with a 1 MiB output limit; larger files fail. Display recent lines and count a literal keyword in displayed text. Use an absolute path in the tab's environment (WSL Ubuntu on Windows). No files are modified and no model requests are made. Tool results contain summary metadata, not log contents.",
   "panels": [{ "id": "inspection", "title": "Log inspection" }],
   "tools": [
     { "id": "inspect", "title": "Inspect a log file", "description": "Read the last lines of an absolute log file path, count literal keyword occurrences and publish a read-only panel.", "inputSchema": {
