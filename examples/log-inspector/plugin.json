@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 2,
+  "id": "example.log-inspector",
+  "name": "Log Inspector",
+  "version": "1.0.0",
+  "description": "Read-only English example for Plugin API 1.1: inspect a small log file, count a literal keyword in displayed text, and keep output bounded. No model key needed.",
+  "author": "AITerminal community",
+  "license": "Apache-2.0",
+  "runtime": "node",
+  "entry": "index.js",
+  "engines": { "aiterminal": ">=1.5.1", "pluginApi": "^1.1.0" },
+  "permissions": ["files.read", "context.read"],
+  "tags": ["Example", "Logs", "Offline"],
+  "instructions": "Inspect a small log file read-only. The host reads the file with a 1 MiB output limit; larger files fail. Display recent lines and count a literal keyword in displayed text. Use an absolute path in the tab's environment (WSL Ubuntu on Windows). No files are modified and no model requests are made. Tool results contain summary metadata, not log contents.",
+  "panels": [{ "id": "inspection", "title": "Log inspection" }],
+  "tools": [
+    { "id": "inspect", "title": "Inspect a log file", "description": "Read the last lines of an absolute log file path, count literal keyword occurrences and publish a read-only panel.", "inputSchema": {
+      "type": "object",
+      "properties": {
+        "path": { "type": "string", "title": "Absolute log file path", "minLength": 1, "maxLength": 500 },
+        "lines": { "type": "integer", "title": "Recent lines to show", "default": 50, "minimum": 1, "maximum": 200 },
+        "keyword": { "type": "string", "title": "Literal keyword to count", "maxLength": 80 }
+      },
+      "required": ["path"]
+    } }
+  ]
+}
