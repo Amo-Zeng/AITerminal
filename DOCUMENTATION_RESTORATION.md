@@ -48,4 +48,12 @@
 - 自动生成的 Release 说明直接附上 macOS `xattr` 命令和该构建对应的安装指南，下载页也能找到处理步骤。
 - macOS 隔离提示的处理方法按原版社区反馈恢复，本机 Linux 未重现 macOS 下载后隔离弹框；CI 验证对应平台的构建与打包后启动。
 
-完整测试、链接检查、PR 合并和正式发布结果在完成后补记于此。
+## GitHub 同步结果
+
+- [PR #9](https://github.com/Amo-Zeng/AITerminal/pull/9) 已审查并合并，提交 `268f71e6b7e820994a3efc024dbf0a94bf98874e` 保留贡献者历史；关联 [#7](https://github.com/Amo-Zeng/AITerminal/issues/7) 已按完成关闭。
+- [PR 修正版三平台 CI](https://github.com/Amo-Zeng/AITerminal/actions/runs/42561002936) 全部成功，包括 Windows UTF-8/换行回归和安装包构建。
+- README 中英文、安装指南、中英文使用手册和文档索引已匿名读取 GitHub 公开版本，内容与本地提交逐字节一致。
+- 1.6.1 发布构建源码：`aa4dbb4da39bd11e834d3aded4e6175694b9c158`。[正式发布工作流](https://github.com/Amo-Zeng/AITerminal/actions/runs/42561667375) 的 Windows、macOS、Linux 构建、打包后启动检查和发布任务全部成功。
+- [v1.6.1](https://github.com/Amo-Zeng/AITerminal/releases/tag/v1.6.1) 于 2026-11-09 12:30:51（北京时间）正式发布；匿名访问 [最新下载入口](https://github.com/Amo-Zeng/AITerminal/releases/latest) 已跳转该版本。
+- 发布页共 8 个附件：Windows x64 安装程序、Linux x64 AppImage、macOS ARM64 DMG、三平台 SBOM、构建来源记录和 SHA-256 校验清单。未登录状态下，三个安装包的 HEAD 请求均返回 HTTP 200，大小与发布元数据一致；校验清单和构建来源记录已实际下载，核对摘要、源码提交与工作流链接。此项检查验证公开附件可访问，不等同于在本机运行三个平台的安装程序。
+- Release 正文已核对包含 macOS `xattr` 命令和固定到本次源码提交的安装指南。公开文档与附件核验结果分别保存在本地 `release/docs-pr9-review/public-docs-verification.json` 和 `release/docs-pr9-review/public-release-verification.json`，不包含凭据。
