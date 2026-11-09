@@ -32,6 +32,18 @@ test('Windows PowerShell keeps plain UTF-8 output and native exit status', { ski
     const error = await service({}, 'terminal.exec', { command: "Write-Error 'fixture failure'" }, task);
     assert.equal(error.exitCode, 1); assert.match(error.output, /fixture failure/); assert.doesNotMatch(error.output, /CLIXML|<Objs/);
 });
+test('file reads preserve UTF-8 and exact trailing newlines on the native shell', async t => {
+    const fs = require('fs'), os = require('os'), path = require('path');
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ait-file-read-'));
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+    const file = path.join(root, "quoted ' file.txt");
+    const { service, task } = fixture({ binding: { shell: process.platform === 'win32' ? 'powershell' : 'posix' } });
+    for (const content of ['中文 😀\r\nsecond\r\n', 'no trailing newline', '']) {
+        fs.writeFileSync(file, content, 'utf8');
+        const result = await service({}, 'files.read', { path: file }, task);
+        assert.equal(result.exitCode, 0); assert.equal(result.output, content);
+    }
+});
 test('cancelling a running process rejects promptly and stops its owned process group', { skip: process.platform === 'win32' }, async () => {
     const { service, task, controller } = fixture();
     const promise = service({}, 'terminal.exec', { argv: ['sleep', '30'] }, task);
