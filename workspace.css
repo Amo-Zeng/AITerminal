@@ -670,6 +670,23 @@ input:focus-visible,
   color: var(--text-secondary);
   font-size: 10px;
   margin-bottom: 9px;
+  flex-wrap: wrap;
+}
+.ai-control-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.ai-control-label select {
+  padding: 3px 7px;
+  font-size: 11px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+.ai-control-label select:disabled {
+  opacity: 0.65;
 }
 .composer-label {
   color: var(--accent-color);
@@ -878,6 +895,49 @@ input:focus-visible,
   border: 1px solid var(--border-color);
   border-radius: 12px;
   box-shadow: 0 20px 80px var(--shadow-lg);
+}
+.modal-section,
+.config-section {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+  border-radius: 8px;
+  box-shadow: none;
+}
+.modal-content input:not([type="checkbox"]),
+.modal-content select,
+.modal-content textarea,
+.plugin-field input,
+.plugin-field select,
+.plugin-field textarea {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  padding: 9px 11px;
+  box-shadow: none;
+}
+.modal-content .btn,
+.plugin-center .btn,
+.ai-result-container .ai-action-btn {
+  min-height: 32px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+.modal-content .btn-primary,
+.plugin-center .btn-primary {
+  background: #3979d7;
+  border-color: #3979d7;
+  color: white;
+}
+.modal-tab:hover,
+.modal-tab.active {
+  box-shadow: none;
+  transform: none;
+}
+.plugin-tool th,
+.plugin-tool td {
+  border-color: var(--border-color);
 }
 .modal-header {
   background: var(--bg-primary);

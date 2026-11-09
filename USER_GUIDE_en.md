@@ -37,8 +37,8 @@ These recordings are preserved from the original README. UI layout and confirmat
 | Input | Behavior |
 | --- | --- |
 | `How do I check Linux memory usage?` | Chat and follow-up questions; `ai` and `ask` prefixes also work |
-| `fix` | Diagnose recent output and context from this tab |
-| `analyze` | Collect system information for analysis by the configured model |
+| `fix` | Diagnose the current pane's text screen |
+| `analyze` | Analyze the current text screen and suggest further checks if metrics are missing; no separate first-host collection |
 | `cmd find files over 100 MB in the current directory` | Generate a shell command for review before execution |
 | `send printf '%s\n' 'hello world'` | Send the shell payload with quotes/pipes intact through command auditing, without AI |
 | `help` | Show in-app help |
@@ -51,17 +51,19 @@ AI replies default to a split view; AI settings also offer terminal output. The 
 
 ## AI takeover and interactive tools
 
-Describe a task, then click AI takeover. For example, ask it to diagnose failed tests, fix the cause and rerun them. You can stop execution, answer questions, add instructions, retry failed requests or compress takeover context. Continue with further changes after a task finishes.
+Describe a task, then click Current terminal takeover. For example, ask it to diagnose failed tests, fix the cause and rerun them. You can pause, answer questions, add instructions or retry from a fresh screen read. Advanced mode also supports the existing context compression workflow.
 
-Use `local:`, `remote:` or `hybrid:` to select targets. The default is the connected SSH host, otherwise local. Local takeover starts from the visible terminal's current directory and then tracks its own working directory. Supply an absolute path when working in a different tmux pane directory.
+The default **Current terminal** mode reads the selected pane's text screen and sends input to the same stream. A task stays in the pane selected at submission even if you focus another pane. This includes SSH inside SSH and the active tmux pane or interactive program. It does not run a separate command on the first SSH host. It reads terminal characters, not images or graphical desktops; host identity and foreground state must still be inferred from the text.
 
-Codex, Vim and REPLs can run manually in the terminal or through takeover's independent PTY sessions. The programs must be installed in the target environment, including WSL Ubuntu for the Windows local terminal. `search keyword` searches this tab's takeover history index; this context index is distinct from standard MCP integrations in the Plugin Center.
+Task logs appear in the AI sidebar to preserve Codex/Vim screens. Manual input in the original pane pauses AI without moving keyboard focus. Pause does not send Ctrl+C to the foreground program. Resume with a new instruction; retries reread the screen instead of replaying input. Closing, reconnecting or replacing the backend invalidates late responses and approvals. The original goal and latest correction stay in context, with bounded recent history and a pause after 40 automatic steps. High-risk input and alternate-screen Enter require confirmation; trust in the first SSH host does not extend to an unknown inner session.
+
+Select **Advanced · Host and plugins**, or use `local:`, `remote:` or `hybrid:`, for the existing host tools, independent processes, plugin model adapters and context compression. This mode does not reliably follow nested SSH. SFTP and plugin background services use the directly connected host; local services use the terminal's distribution but separate processes and state. Use `terminal:` to explicitly select screen control. Programs must be installed in the actual target environment, including WSL Ubuntu for the Windows local terminal. `search keyword` searches the advanced takeover history index, distinct from standard MCP integrations.
 
 See [AI takeover](AI_TAKEOVER_MODE_README.md) for targets, interaction and permissions. The working directory is not a sandbox, and cancelling a task does not undo executed changes.
 
 ## Remote file transfer and browsing
 
-These features require SSH in the current tab. Use the local shell and file manager on local tabs.
+These features require SSH in the current tab and operate on the directly connected host, not a second SSH session inside the terminal. Use the local shell and file manager on local tabs.
 
 - **Upload:** drag local files from your system file manager into the terminal or bottom input. Files go to the current SSH directory. The upload button also opens a file picker.
 - **`rfe [path]`:** open an SFTP file pane below its terminal, which remains usable. Click directories to navigate, files to download and open locally, or the download arrow to choose a save location. Omitting the path queries the current remote directory. Quote paths with spaces, such as `rfe "/home/user/my logs"`. The pane's file button starts from the SSH default directory.

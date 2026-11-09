@@ -691,7 +691,7 @@ window.AITerminalWorkspace = class {
     );
     const title = document.createElement("span");
     title.textContent = remotePath;
-    title.title = remotePath;
+    title.title = `直连 SSH：${owner.connectionConfig?.host || ''} · ${remotePath}（不跟随终端内的嵌套 SSH）`;
     const refresh = document.createElement("button");
     refresh.textContent = "↻";
     refresh.title = "刷新目录";
@@ -713,6 +713,7 @@ window.AITerminalWorkspace = class {
       row.className = "file-row";
       const open = document.createElement("button");
       open.textContent = (file.isDirectory ? "▸ " : "· ") + file.name;
+      open.title = file.isDirectory ? "打开目录" : "下载并用本机应用打开";
       const full = remotePath.replace(/\/$/, "") + "/" + file.name;
       open.addEventListener("click", async () => {
         if (!ownsTerminalTab(id, owner) || !owner.isConnected) return;

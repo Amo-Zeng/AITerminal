@@ -20,7 +20,7 @@ function fixture(options = {}) {
         terminalDirectory: async (session, requested, valid) => { assert.equal(session, terminal); assert.equal(valid(), true); assert.equal(requested, null); return '/home/user/project'; },
         dialog: { showMessageBox: async (_window, params) => { dialogs.push(params); options.onConsent?.(owner, sessions); return { response: 1 }; } },
         stopLocalInteractiveSession() {}, clearReplContinueTimers() {}, clearReplWaiter() {}, createEmptyContextGraph: () => ({}), buildOrUpdateContextIndex() {},
-        setTimeout() {}, cancelAiRequests() {}
+        setTimeout() {}, cancelAiRequests() {}, stopTerminalAgent() {}
     });
     vm.runInContext(declaration('function revokeLocalTakeover(', 'function stopAllLocalTerminalSessions(') +
         declaration('function capturePluginBinding(', 'function getPluginRuntime(') +

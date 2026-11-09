@@ -11,6 +11,17 @@
 
 AITerminal is an open-source desktop terminal built with Electron, xterm.js and SSH2. It combines local PTYs, SSH, AI conversations, interactive command execution and a Plugin Center. The source is licensed under **Apache License 2.0** and runs on Windows, Linux and macOS.
 
+## Try these workflows
+
+| Situation | What to do |
+| --- | --- |
+| You connected through a jump host and want AI to continue on the inner SSH host | Select that pane, keep the default Current terminal mode and describe the task. AI reads its text screen and types into the same stream; changing pane focus does not move the task |
+| Codex / Claude Code will take a while | Start it with Run and notify, configure a Webhook for completion or abnormal exits, and use output keywords for situations that need attention |
+| A server produced an image or report | Use `rfe path` on the directly connected SSH host, then click the file to download and open it locally |
+| Your team repeats the same diagnostics | Package the workflow as a parameterized tool, panel or MCP integration. Enable it per session and pin its panel to the workspace |
+
+Notifications require the app to remain running; a disconnected remote process has an unknown state. File services and plugin background tools use the directly connected host, not a nested SSH session. See [takeover](AI_TAKEOVER_MODE_README.md) and [notification details](WEBHOOKS.md).
+
 ## Demos
 
 **1.7.0 workspace:** independent terminals share a layout with a plugin panel pinned to its session. These are real application screenshots showing local tests and plugin example validation.
@@ -23,6 +34,10 @@ AITerminal is an open-source desktop terminal built with Electron, xterm.js and 
 ![Light workspace](assets/workspace-light.png)
 
 </details>
+
+**Plugin Center:** a real screenshot of the offline Ops Quest panel. Try a plugin without a model key, then use the SDK to create your own tools and panels.
+
+![Plugin Center showing the catalog, session ownership and Ops Quest panel](assets/plugin-center.png)
 
 These recordings from earlier versions show the application in use. The current UI, tab isolation and command confirmation flow have since been updated; follow the current application and documentation for exact behavior.
 
@@ -65,7 +80,7 @@ These recordings from earlier versions show the application in use. The current 
 - A Plugin Center with parameterized tools, model adapters, standard MCP, task events, panels, configuration, catalogs and version recovery. Pin panels to the workspace while keeping their original session ownership. Code plugins use dedicated processes and a Cordis lifecycle.
 - SSH host fingerprint verification and platform-encrypted storage for SSH credentials, model API keys and Webhook URLs.
 
-AI follows the current tab's terminal environment. On Windows, the local terminal, AI takeover, interactive programs and plugins all use the same **WSL Ubuntu** distribution and Linux paths. Linux/macOS use their local shell; SSH tabs use the remote environment. Local takeover starts in the visible terminal's current directory. Restart takeover after closing or replacing its terminal.
+AI defaults to the terminal selected when you submit the task: it reads that text screen and types into the same stream, including nested SSH and existing interactive programs. Changing focus does not retarget a running task. Windows local terminals default to **WSL Ubuntu**; Linux/macOS use their local shell. Advanced host/plugin execution uses separate services and does not reliably follow nested SSH; see [takeover modes](AI_TAKEOVER_MODE_README.md).
 
 ### Everyday commands
 
@@ -75,11 +90,11 @@ Enter these in the bottom command/AI input. Typing inside the terminal goes dire
 | --- | --- |
 | `How do I check Linux memory usage?` | AI chat; `ai` and `ask` prefixes also work |
 | `cmd find files larger than 100 MB in the current directory` | Generate a command for review before execution |
-| `fix` / `analyze` | Diagnose recent terminal output / analyze the current system |
+| `fix` / `analyze` | Diagnose/analyze the current text screen; suggest additional checks when metrics are missing |
 | `send ls -lah` | Send a command to this tab's local or SSH shell, without a model key |
 | `/` | Search saved commands, select one and press Enter to send |
 | `rfe /var/log` / `myls /var/log` | Browse/download SSH files or download and open them locally |
-| `search keyword` | Search this tab's AI takeover history index |
+| `search keyword` | Search this tab's advanced takeover history index |
 | AI takeover / Plugin Center / Run and notify | Multi-step tasks, plugin tools and program-exit notifications |
 | Horizontal/vertical split / Save workspace | Show independent terminals together and save their layout; reopening creates new sessions and requires manual SSH reconnection |
 

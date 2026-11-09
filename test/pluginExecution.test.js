@@ -53,6 +53,7 @@ function setup(t, confirm) {
         parsePluginCall, parsePluginToolCall, auditCommand, normalizeTabId: id => /^tab-\d+$/.test(id) ? id : null,
         getWindowConnectionInfo: () => tab, getWindow: () => ({}), ownsTabConnection: () => owned,
         getLocalTerminalMap: () => sessions, getPluginManager: () => manager,
+        pauseTerminalAgent() {},
         getWindowStateForConnectionInfo: () => ({ webhookConfig: settings }), ProgramMarkers, monitoredCommand,
         observeProgram: (_owner, target, source, command) => createProgramObserver({ config: () => settings, emit: (event, data) => notifications.push({ event, ...data }), target, source, command }),
         confirmAuditedCommand: async (_win, _tab, command, audit) => { audits.push({ command, audit }); return confirm ? confirm(tab, sessions) : true; }

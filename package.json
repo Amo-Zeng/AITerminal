@@ -14,6 +14,7 @@
     "smoke:documented-flows": "node scripts/documentedFlowsSmoke.js",
     "smoke:terminal": "node scripts/terminalInteractionSmoke.js",
     "smoke:workspace": "node scripts/workspaceSmoke.js",
+    "smoke:terminal-agent": "node scripts/terminalAgentSmoke.js",
     "smoke:tmux": "node scripts/terminalInteractionSmoke.js --tmux",
     "smoke:plugins": "node scripts/pluginCenterSmoke.js",
     "smoke:plugin-runtime": "node scripts/pluginRuntimeSmoke.js",

@@ -616,6 +616,7 @@
                 connectionConfig: options.connection || null,
                 pendingRemote: options.deferStart === true,
                 aiConfigSnapshot: sanitizeConfigForStorage(readStoredObject('sshConfig')),
+                aiControlMode: 'terminal',
                 container: terminalContainer,
                 resizeObserver: resizeObserver,
                 sshConnection: null, // 为每个标签页独立的SSH连接做准备
@@ -1001,7 +1002,26 @@
             workspace?.renderSessions();
         }
 
-	        function setupEventListeners() {
+        function setupEventListeners() {
+            document.getElementById('aiControlMode')?.addEventListener('change',event=>{
+                const info=getActiveTabInfo();
+                if(info)info.aiControlMode=event.target.value;
+                aiTakeoverManager?.updateTakeoverButtons();
+            });
+            window.electronAPI?.onTerminalScreenRequest?.(({requestId,tabId}) => {
+                const owner = terminalTabs.get(tabId);
+                const reply = (screen, error) => window.electronAPI.terminalScreenReply({requestId,tabId,screen,error});
+                if (!owner || owner.isClosing) {reply(null,'终端已关闭');return;}
+                owner.terminal.write('', () => {
+                    if (!ownsTerminalTab(tabId,owner)) {reply(null,'终端已变化');return;}
+                    const t=owner.terminal, b=t.buffer.active;
+                    const read = start => Array.from({length:Math.min(t.rows,500)},(_,i)=>b.getLine(start+i)?.translateToString(true)||'').join('\n');
+                    const screen=read(b.baseY), viewport=read(b.viewportY);
+                    reply({title:owner.title,cols:t.cols,rows:t.rows,buffer:b.type,cursor:{x:b.cursorX,y:b.cursorY},
+                        applicationCursor:t.modes.applicationCursorKeysMode,bracketedPaste:t.modes.bracketedPasteMode,
+                        screen:screen.slice(0,24000),viewport:viewport.slice(0,24000),scrolled:b.viewportY!==b.baseY,truncated:screen.length>24000||viewport.length>24000});
+                });
+            });
 	            document.addEventListener('click', (event) => {
 	                const copyButton = event.target.closest('[data-renderer-control="copy-code"]');
 	                if (copyButton) copyCodeBlock(copyButton);
@@ -1392,7 +1412,7 @@
 	            tabInfo.aiResult = { ...result };
 	            tabInfo.aiResultComplete = !!isComplete;
             const savedConfig = tabInfo.aiConfigSnapshot || readStoredObject('sshConfig');
-            if (savedConfig.aiDisplayMode === 'terminal') {
+            if (savedConfig.aiDisplayMode === 'terminal' && !result.forcePanel) {
                 // This part is now only for NON-STREAMING results.
 	                // Streaming is handled by handleAiChat and updateStreamingContent.
 		                if (isComplete) { // Only render if it's a final, complete result
@@ -1616,7 +1636,7 @@
 	            window.currentAiResult = null;
 	            const tabInfo = terminalTabs.get(tabId);
 	            const savedConfig = tabInfo?.aiConfigSnapshot || readStoredObject('sshConfig');
-	            if (!tabInfo?.aiResult || savedConfig.aiDisplayMode === 'terminal') return;
+	            if (!tabInfo?.aiResult || (savedConfig.aiDisplayMode === 'terminal' && !tabInfo.aiResult.forcePanel)) return;
 	            if (tabInfo.aiResultComplete) renderAiResultFinal(tabInfo.aiResult, tabId);
 	            else {
 	                renderAiResultStreaming(tabInfo.aiResult, tabId);
@@ -4558,6 +4578,7 @@
             // 更新按钮显示状态
             function getDefaultTakeoverLabel() {
 		                if (getActiveTabInfo()?.aiWaitingForUserInput) return '💬 输入并继续';
+	                if (getActiveTabInfo()?.aiControlMode !== 'host') return '接管当前终端';
 	                return canSendToSsh(activeTabId) ? 'AI 接管 · SSH' : 'AI 接管 · 本地';
             }
 
@@ -4571,6 +4592,11 @@
             function updateTakeoverButtons() {
                 const compressContextBtn = document.getElementById('compressContext');
 	                const tabInfo = getActiveTabInfo();
+                    const modeSelect=document.getElementById('aiControlMode');
+                    if(modeSelect) {
+                        modeSelect.value=tabInfo?.aiControlMode||'terminal';
+                        modeSelect.disabled=!!(tabInfo?.aiTakeoverMode||tabInfo?.aiWaitingForUserInput||tabInfo?.aiTakeoverStarting);
+                    }
 	                isTakeoverMode = !!tabInfo?.aiTakeoverMode;
 	                window.aiWaitingForUserInput = !!tabInfo?.aiWaitingForUserInput;
                 
@@ -4586,19 +4612,19 @@
                 // takeover running
                 startTakeoverBtn.style.display = 'none';
                 stopTakeoverBtn.style.display = 'inline-flex';
-                if (compressContextBtn) compressContextBtn.style.display = 'inline-flex';
+                if (compressContextBtn) compressContextBtn.style.display = tabInfo?.aiTakeoverTarget==='terminal' ? 'none' : 'inline-flex';
                 if (retryTakeoverBtn) retryTakeoverBtn.style.display = 'none';
             }
             
             // 启动AI接管模式（防止重复触发）
 	            function parseTakeoverStartRequest(rawTask, tabId = activeTabId) {
 	                const raw = (rawTask || '').trim();
-	                let target = canSendToSsh(tabId) ? 'remote' : 'local';
+	                let target = terminalTabs.get(tabId)?.aiControlMode === 'host' ? (canSendToSsh(tabId) ? 'remote' : 'local') : 'terminal';
                 let task = raw;
 
                 // 支持前缀: local:/本地: remote:/远程: hybrid:/混合:
-                const m = /^(local|本地|remote|远程|hybrid|混合)\s*[:：]\s*(.*)$/i.exec(raw);
-                const m2 = m ? null : /^(local|本地|remote|远程|hybrid|混合)\s+(.*)$/i.exec(raw);
+                const m = /^(terminal|终端|local|本地|remote|远程|hybrid|混合)\s*[:：]\s*(.*)$/i.exec(raw);
+                const m2 = m ? null : /^(terminal|终端|local|本地|remote|远程|hybrid|混合)\s+(.*)$/i.exec(raw);
                 const hit = m || m2;
                 if (hit) {
                     const k = (hit[1] || '').toLowerCase();
@@ -4606,6 +4632,7 @@
                     if (k === 'local' || k === '本地') target = 'local';
                     else if (k === 'remote' || k === '远程') target = 'remote';
                     else if (k === 'hybrid' || k === '混合') target = 'hybrid';
+                    else if (k === 'terminal' || k === '终端') target = 'terminal';
                     task = rest || raw;
                 }
 
@@ -4639,7 +4666,12 @@
 	                            : await window.electronAPI.aiTakeoverContinue(task, takeoverTabId);
                             
 	                        if (!ownsTerminalTab(takeoverTabId, takeoverTabInfo)) return;
-	                        if (result?.success) {
+	                        if (result?.stopped) {
+                                takeoverTabInfo.aiTakeoverMode = false;
+                                takeoverTabInfo.aiWaitingForUserInput = false;
+                                takeoverTabInfo.aiTakeoverInterrupted = false;
+                                if(activeTabId===takeoverTabId) {commandInput.value='';syncTakeoverUiForTab(takeoverTabId);}
+	                        } else if (result?.success) {
 	                            takeoverTabInfo.aiTakeoverMode = true;
 	                            takeoverTabInfo.aiWaitingForUserInput = false;
 	                            takeoverTabInfo.aiTakeoverInterrupted = false;
@@ -4649,7 +4681,7 @@
 	                                commandInput.placeholder = '🤖 AI接管模式运行中...';
 	                                commandInput.disabled = true;
 	                                window.aiWaitingForUserInput = false;
-	                                openFlowModal();
+	                                if(takeoverTabInfo.aiTakeoverTarget!=='terminal')openFlowModal();
 	                            }
 	                            showNotification('AI接管模式继续执行', 'success');
                         } else {
@@ -4658,6 +4690,8 @@
                     } else {
                         // 正常启动AI接管模式
 	                        const req = parseTakeoverStartRequest(task, takeoverTabId);
+	                        takeoverTabInfo.aiTakeoverTarget=req.target;
+                            takeoverTabInfo.terminalAgentLog=[];
 	                        if ((req.target === 'remote' || req.target === 'hybrid') && !canSendToSsh(takeoverTabId)) {
 	                            showNotification('需要SSH连接才能启动远程/混合AI接管模式', 'error');
 	                            return;
@@ -4678,7 +4712,7 @@
 	                                commandInput.value = '';
 	                                commandInput.placeholder = '🤖 AI接管模式运行中...';
 	                                commandInput.disabled = true;
-	                                openFlowModal();
+	                                if(req.target!=='terminal')openFlowModal();
 	                            }
 	                            showNotification('AI接管模式已启动', 'success');
                         } else {
@@ -4825,7 +4859,15 @@
 	                };
 	                const color = colorMap[update.type] || '\x1b[37m';
 	                const message = String(update.message || '');
-	                if (getTabTerminal(targetTabId)) {
+                    if(update.surface==='terminal') {
+                        tabInfo.aiTakeoverTarget='terminal';
+                        const log=tabInfo.terminalAgentLog ||= [];
+                        if(update.type!=='thinking')log.push(message);
+                        if(log.length>30)log.splice(0,log.length-30);
+                        const escaped=log.join('\n\n').replace(/[&<>]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[char]));
+                        renderAiResult({response:'### 当前终端接管\n\n目标绑定此会话，切换窗格不会转移任务。\n\n<pre>'+escaped+'</pre>',command:'当前终端接管',forcePanel:true},true,targetTabId);
+                    }
+	                if (update.surface!=='terminal' && getTabTerminal(targetTabId)) {
 	                    if (update.type === 'streaming') {
 	                        if (!tabInfo.aiTakeoverStreamStarted) {
 	                            writeToTerminalTab(targetTabId, `\r\n${color}[AI接管] 💭 AI正在思考，等待AI回复中...\x1b[0m\r\n`);
@@ -4856,7 +4898,7 @@
 	                        ? '⚡ 打断'
 	                        : (update.type === 'executing' ? '🛑 停止' : '🛑 停止接管');
 	                }
-	                if (update.type === 'user_input' || update.type === 'interrupted') commandInput.focus();
+	                if (update.type === 'user_input' || (update.type === 'interrupted' && update.surface !== 'terminal')) commandInput.focus();
 	                if (update.type === 'error' && retryTakeoverBtn) retryTakeoverBtn.style.display = 'inline-flex';
 	                if (update.type === 'complete' || update.type === 'stop' || update.type === 'error') startTakeoverBtn.disabled = false;
 	                return true;
@@ -4878,11 +4920,14 @@
                         
                         // 检查是否输入了退出指令
                         const input = commandInput.value.trim();
-                        if (input.toLowerCase().includes('退出') || input.toLowerCase().includes('结束')) {
+                        if (['退出','结束','exit'].includes(input.toLowerCase())) {
                             // 直接退出接管模式
 	                            const targetTabId = activeTabId;
 	                            const targetTabInfo = activeTakeoverInfo;
-	                            window.electronAPI.aiTakeoverStop(targetTabId).then((result) => {
+	                            const stop = targetTabInfo.aiTakeoverTarget === 'terminal'
+                                    ? window.electronAPI.aiTakeoverContinue('退出',targetTabId)
+                                    : window.electronAPI.aiTakeoverStop(targetTabId);
+	                            stop.then((result) => {
 	                                if (!ownsTerminalTab(targetTabId, targetTabInfo)) return;
 	                                if (result && result.success === false) throw new Error(result.error || '未知错误');
 	                                targetTabInfo.aiTakeoverMode = false;

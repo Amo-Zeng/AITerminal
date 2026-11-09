@@ -61,6 +61,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
         : ipcRenderer.invoke('terminal-execute-audited', { tabId: resolveTabId(tabId), command, notifyOnExit: true }),
     onTerminalLocalOutput: (callback) => ipcRenderer.on('terminal-local-output', (_event, value) => callback(value)),
     onTerminalLocalExit: (callback) => ipcRenderer.on('terminal-local-exit', (_event, value) => callback(value)),
+    onTerminalScreenRequest: (callback) => ipcRenderer.on('terminal-screen-request', (_event, value) => callback(value)),
+    terminalScreenReply: (payload) => ipcRenderer.send('terminal-screen-reply', boundedConfig(payload)),
     removeTerminalLocalListeners: () => {
         ipcRenderer.removeAllListeners('terminal-local-output');
         ipcRenderer.removeAllListeners('terminal-local-exit');

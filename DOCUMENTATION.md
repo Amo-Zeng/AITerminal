@@ -7,7 +7,7 @@
 | 下载、首次运行、macOS“已损坏”、WSL、Linux FUSE / Install and troubleshoot | [安装指南 / Installation](INSTALLATION.md) |
 | AI 问答、命令、文件传输、快捷键、外观、多会话工作区 / Everyday use | [使用手册](USER_GUIDE.md) · [English user guide](USER_GUIDE_en.md) |
 | 配置 Chat Completions、Responses、Messages / Configure a model API | [模型 API / AI providers](AI_PROVIDERS.md) |
-| AI 管理本地与远程、交互式 CLI、目标环境 / AI takeover and interactive CLI | [AI 接管](AI_TAKEOVER_MODE_README.md) |
+| AI 绑定焦点窗格、嵌套 SSH、交互式 CLI、主机/插件服务范围 / AI pane ownership and nested SSH | [AI 接管](AI_TAKEOVER_MODE_README.md) |
 | 配置任务完成、程序停止、输出匹配通知 / Task and terminal notifications | [Webhook](WEBHOOKS.md) |
 | 安装、配置、启停和分发插件 / Use plugins and catalogs | [插件使用](PLUGINS.md) |
 | 写插件、接入 MCP、适配 DSH/Cordis / Develop plugins and integrations | [SDK](PLUGIN_SDK.md) · [English quickstart](PLUGIN_QUICKSTART.md) · [架构 / Architecture](PLUGIN_ARCHITECTURE.md) |

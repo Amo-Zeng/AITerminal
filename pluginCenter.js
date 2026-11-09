@@ -221,7 +221,7 @@
         if (!owner) return;
         generation++; busy = false; entries = []; remoteEntries = []; drafts.clear(); preview = null; selected = null;
         for (const node of dialog.querySelectorAll('[data-plugin-action]')) node.disabled = false;
-        document.getElementById('pluginScope').textContent = `当前标签：${owner.title} · 启停立即生效，新标签默认设置不影响其他已打开的标签。`;
+        document.getElementById('pluginScope').textContent = `所属会话：${owner.title} · 文件/后台工具使用${owner.isConnected ? '直连 SSH 主机' : '本地独立进程'}，不跟随终端内的嵌套 SSH。需要操作眼前页面时使用“当前终端”接管。`;
         dialog.showModal(); message('正在加载插件…'); render();
         try { await refresh(); if (!status.classList.contains('plugin-error')) message('插件指引会加入本标签的 AI 请求；终端动作继续接受高危命令审计。'); }
         catch (error) { message(error.message, true); }
