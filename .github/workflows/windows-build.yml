@@ -87,6 +87,14 @@ jobs:
         if: runner.os != 'Linux'
         run: npm run smoke:documented-flows
 
+      - name: Test native workspaces and independent SSH sessions
+        if: runner.os != 'Linux'
+        run: npm run smoke:workspace
+
+      - name: Test native workspaces and independent SSH sessions under Xvfb
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run smoke:workspace
+
       - name: Test documented file and command flows under Xvfb
         if: runner.os == 'Linux'
         run: xvfb-run -a npm run smoke:documented-flows

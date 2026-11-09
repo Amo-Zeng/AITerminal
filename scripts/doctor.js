@@ -228,7 +228,7 @@ function main() {
   const args = new Set(process.argv.slice(2));
   const syntaxOnly = args.has('--syntax-only');
   const root = path.join(__dirname, '..');
-	const files = ['main.js', 'preload.js', 'rendererSecurity.js', 'rendererStorage.js', 'renderer.js', 'pluginCenter.js', 'index.js'].map((f) => path.join(root, f));
+	const files = ['main.js', 'preload.js', 'rendererSecurity.js', 'rendererStorage.js', 'renderer.js', 'workspaceRenderer.js', 'pluginCenter.js', 'index.js'].map((f) => path.join(root, f));
 	for (const directory of ['lib', 'scripts']) {
 	  for (const name of fs.readdirSync(path.join(root, directory))) if (name.endsWith('.js')) files.push(path.join(root, directory, name));
 	}

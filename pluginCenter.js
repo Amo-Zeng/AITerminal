@@ -91,6 +91,8 @@
                 const table = element('table'); const header = element('tr'); for (const column of panel.columns.slice(0, 16)) header.append(element('th', String(column))); table.append(header);
                 for (const row of panel.rows.slice(0, 100)) { const tr = element('tr'); for (const cell of (Array.isArray(row) ? row : []).slice(0, 16)) tr.append(element('td', String(cell ?? ''))); table.append(tr); } section.append(table);
             } else section.append(element('pre', String(panel.text || ''), 'plugin-command'));
+            const pinButton = button('固定到工作区', 'pin-panel', { id: p.id, panelId: panel.id });
+            section.append(pinButton);
             detail.append(section);
         }
         for (const tool of p.tools || []) {
@@ -234,6 +236,11 @@
         if (!node || busy || !valid()) return;
         const { pluginAction: action, id, actionId, enabled, toolId, taskId, scope, modelId } = node.dataset;
         if (action === 'select') { selected = id; preview = null; render(); }
+        else if (action === 'pin-panel') {
+            const plugin = entries.find(p => p.id === id);
+            const panel = plugin?.runtimeState?.panels?.find(p => p.id === node.dataset.panelId);
+            if (panel && workspace) { workspace.pin(tabId, id, panel.id, panel.title || plugin.name); dialog.close(); }
+        }
         else if (action === 'cancel-preview') { preview = null; render(); message('已取消预览'); }
         else if (action === 'preview-bundled') void perform(() => api.pluginsPreview({ kind: 'bundled', id }, tabId));
         else if (action === 'file') void perform(() => api.pluginsPreview({ kind: 'file' }, tabId));

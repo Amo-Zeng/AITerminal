@@ -8,6 +8,7 @@ const crypto = require('crypto');
 const { Client } = require('ssh2');
 const https = require('https');
 const { decodeTerminalInput } = require('./lib/terminalInput');
+const { listRemoteFiles, withRemoteSftp } = require('./lib/remoteFiles');
 if (!app.isPackaged && process.env.AITERMINAL_CLIPBOARD_SMOKE === '1' && process.env.AITERMINAL_SMOKE_USER_DATA) {
     app.setPath('userData', process.env.AITERMINAL_SMOKE_USER_DATA);
 }
@@ -819,7 +820,8 @@ function createWindow() {
         width: 1400,
         height: 900,
     useContentSize: true,                 // 新增：指定宽高指的是 webContents 内容区
-    //backgroundColor: '#2d2d2d',           // 新增：与页面深色背景一致，避免闪白
+        backgroundColor: '#121720',
+        icon: path.join(__dirname, 'build', 'icon.png'),
 	    webPreferences: {
 	        nodeIntegration: false,
 	        contextIsolation: true,
@@ -5035,11 +5037,15 @@ ipcMain.handle('ssh-execute-special', async (event, command, args, tabId) => {
         if (sshRequiredCommands.includes(command) && (!connectionInfo || !connectionInfo.sshConnection)) {
             return { success: false, error: 'SSH connection required for this command' };
         }
+        const requestedConnection = connectionInfo?.sshConnection;
 
         // 对于AI命令，获取当前路径（如果有SSH连接）
         let pathArg = null;
         if (connectionInfo && connectionInfo.sshConnection) {
             pathArg = args[0] || await getCurrentPath(connectionInfo.sshConnection, connectionInfo);
+        }
+        if (sshRequiredCommands.includes(command) && (connectionInfo.sshConnection !== requestedConnection || !ownsTabConnection(getWindow(event), connectionInfo))) {
+            return { success: false, error: 'SSH 会话已变化，请重新读取目录' };
         }
 
         switch (command) {
@@ -5105,42 +5111,13 @@ async function handleMyls(remotePath, connectionInfo) {
 
 // Handler for 'rfe' - provides graphical file explorer view
 async function handleRfe(remotePath, connectionInfo) {
-    return new Promise((resolve) => {
-        const safePath = escapePath(remotePath);
-        const command = `cd ${safePath} && ls -la --full-time && echo "---FILE-TYPES---" && file -bL --mime-type * 2>/dev/null`;
-        connectionInfo.sshConnection.exec(command, (err, stream) => {
-            if (err) return resolve({ success: false, error: err.message });
-            let output = '';
-            let errorOutput = '';
-            stream.on('data', (data) => output += data.toString('utf8'));
-            stream.stderr.on('data', (data) => errorOutput += data.toString('utf8'));
-            stream.on('close', () => {
-                if (errorOutput && !output.includes('---FILE-TYPES---')) return resolve({ success: false, error: errorOutput });
-                const [lsOutput, typesOutput] = output.split('---FILE-TYPES---');
-                if (!lsOutput) return resolve({ success: false, error: 'Failed to execute ls command.' });
-
-                const mimeTypes = {};
-                if (typesOutput) {
-                    typesOutput.trim().split('\n').forEach(line => {
-                        const parts = line.split(':', 2);
-                        if (parts.length >= 2) mimeTypes[parts[0].trim()] = parts[1].trim().split(';')[0];
-                    });
-                }
-                const files = lsOutput.trim().split('\n').slice(1).map(line => {
-                    const parts = line.split(/\s+/);
-                    if (parts.length < 9) return null;
-                    const name = parts.slice(8).join(' ');
-                    return {
-                        name,
-                        isDirectory: parts[0].startsWith('d'),
-                        isImage: (mimeTypes[name] || '').startsWith('image/')
-                    };
-                }).filter(f => f && f.name !== '.' && f.name !== '..');
-
-                resolve({ success: true, isRfeResult: true, files: files, path: remotePath });
-            });
-        });
-    });
+    const connection = connectionInfo.sshConnection;
+    const valid = () => connectionInfo.sshConnection === connection && ownsTabConnection(getWindowForConnectionInfo(connectionInfo), connectionInfo);
+    try {
+        const expanded = String(remotePath).startsWith('~') ? await expandTildePath(remotePath, connection) : remotePath;
+        if (!valid()) throw new Error('SSH 会话已变化');
+        return await listRemoteFiles(connection, expanded, valid);
+    } catch(error) { return { success: false, error: error.message }; }
 }
 
 // AI功能相关函数 - 带重试机制
@@ -5639,8 +5616,11 @@ ipcMain.handle('ssh-download-and-open', async (event, remotePath, tabId) => {
         return { success: false, error: 'No SSH connection' };
     }
 
+    const connection = connectionInfo.sshConnection;
+    const valid = () => ownsTabConnection(getWindow(event), connectionInfo) && connectionInfo.sshConnection === connection;
     try {
-        const expandedPath = await expandTildePath(remotePath, connectionInfo.sshConnection);
+        const expandedPath = await expandTildePath(remotePath, connection);
+        if (!valid()) throw new Error('SSH 会话已变化');
         const filename = path.basename(expandedPath);
         const extension = path.extname(filename).toLowerCase();
         const dangerousExtensions = new Set([
@@ -5665,23 +5645,15 @@ ipcMain.handle('ssh-download-and-open', async (event, remotePath, tabId) => {
                 : await dialog.showMessageBox(options);
             if (decision.response !== 1) return { success: false, error: '用户取消打开危险文件' };
         }
-        const localPath = path.join(os.tmpdir(), `AITerminal-${Date.now()}-${filename}`);
-
-        return new Promise((resolve) => {
-            connectionInfo.sshConnection.sftp((err, sftp) => {
-                if (err) return resolve({ success: false, error: `SFTP Error: ${err.message}` });
-                sftp.fastGet(expandedPath, localPath, async (getErr) => {
-                    sftp.end();
-                    if (getErr) return resolve({ success: false, error: `Download Error: ${getErr.message}` });
-                    try {
-                        await shell.openPath(localPath);
-                        resolve({ success: true, message: `文件已打开: ${filename}` });
-                    } catch (openErr) {
-                        resolve({ success: false, error: `Failed to open file: ${openErr.message}` });
-                    }
-                });
-            });
-        });
+        if (!valid()) throw new Error('SSH 会话已变化');
+        const localPath = path.join(os.tmpdir(), `AITerminal-${crypto.randomUUID()}-${filename}`);
+        await withRemoteSftp(connection, valid, sftp => new Promise((resolve, reject) => {
+            sftp.fastGet(expandedPath, localPath, error => error ? reject(error) : resolve());
+        }), 0);
+        if (!valid()) throw new Error('SSH 会话已变化');
+        const openError = await shell.openPath(localPath);
+        if (openError) throw new Error(openError);
+        return { success: true, message: `文件已打开: ${filename}` };
     } catch (error) {
         return { success: false, error: `Path expansion error: ${error.message}` };
     }
@@ -5694,8 +5666,11 @@ ipcMain.handle('ssh-download-file', async (event, remotePath, tabId) => {
         return { success: false, error: 'No SSH connection' };
     }
 
+    const connection = connectionInfo.sshConnection;
+    const valid = () => ownsTabConnection(getWindow(event), connectionInfo) && connectionInfo.sshConnection === connection;
     try {
-        const expandedPath = await expandTildePath(remotePath, connectionInfo.sshConnection);
+        const expandedPath = await expandTildePath(remotePath, connection);
+        if (!valid()) throw new Error('SSH 会话已变化');
         const filename = path.basename(expandedPath);
 
         const currentWindow = getWindow(event);
@@ -5714,18 +5689,12 @@ ipcMain.handle('ssh-download-file', async (event, remotePath, tabId) => {
             return { success: false, error: '用户取消了保存操作' };
         }
 
+        if (!valid()) throw new Error('SSH 会话已变化');
         const localPath = result.filePath;
-
-        return new Promise((resolve) => {
-            connectionInfo.sshConnection.sftp((err, sftp) => {
-                if (err) return resolve({ success: false, error: `SFTP Error: ${err.message}` });
-                sftp.fastGet(expandedPath, localPath, (getErr) => {
-                    sftp.end();
-                    if (getErr) return resolve({ success: false, error: `Download Error: ${getErr.message}` });
-                    resolve({ success: true, message: `文件已保存到: ${localPath}` });
-                });
-            });
-        });
+        await withRemoteSftp(connection, valid, sftp => new Promise((resolve, reject) => {
+            sftp.fastGet(expandedPath, localPath, error => error ? reject(error) : resolve());
+        }), 0);
+        return { success: true, message: `文件已保存到: ${localPath}` };
     } catch (error) {
         return { success: false, error: `Path expansion error: ${error.message}` };
     }
@@ -5737,8 +5706,11 @@ ipcMain.handle('ssh-drag-upload', async (event, localPaths, tabId) => {
     if (!connectionInfo || !connectionInfo.sshConnection) {
         return { success: false, message: 'No SSH connection' };
     }
+    const connection = connectionInfo.sshConnection;
+    const valid = () => ownsTabConnection(getWindow(event), connectionInfo) && connectionInfo.sshConnection === connection;
     try {
-        const remotePath = await getCurrentPath(connectionInfo.sshConnection, connectionInfo);
+        const remotePath = await getCurrentPath(connection, connectionInfo);
+        if (!valid()) throw new Error('SSH 会话已变化');
 
         const uploadPromises = localPaths.map(async (localPath) => {
             const filename = path.basename(localPath);
@@ -5754,18 +5726,12 @@ ipcMain.handle('ssh-drag-upload', async (event, localPaths, tabId) => {
             }
             remoteFilePath = remoteFilePath.replace(/\/\//g, '/');
 
-            const expandedRemotePath = await expandTildePath(remoteFilePath, connectionInfo.sshConnection);
-
-            return new Promise((resolve, reject) => {
-                connectionInfo.sshConnection.sftp((err, sftp) => {
-                    if (err) return reject(`SFTP Error: ${err.message}`);
-                    sftp.fastPut(localPath, expandedRemotePath, (putErr) => {
-                        sftp.end();
-                        if (putErr) return reject(`Upload failed for ${filename}: ${putErr.message}`);
-                        resolve(`已上传 ${filename} 到 ${remotePath}`);
-                    });
-                });
-            });
+            const expandedRemotePath = await expandTildePath(remoteFilePath, connection);
+            if (!valid()) throw new Error('SSH 会话已变化');
+            await withRemoteSftp(connection, valid, sftp => new Promise((resolve, reject) => {
+                sftp.fastPut(localPath, expandedRemotePath, error => error ? reject(error) : resolve());
+            }), 0);
+            return `已上传 ${filename} 到 ${remotePath}`;
         });
 
         const results = await Promise.all(uploadPromises);

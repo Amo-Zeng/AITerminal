@@ -13,6 +13,17 @@ AITerminal 是基于 Electron、xterm.js 和 SSH2 的开源桌面终端，将本
 
 ## 功能演示
 
+**1.7.0 工作区**：同屏运行独立终端，右侧固定所属会话的插件面板。下图为真实应用截图，终端显示本地测试与插件示例校验结果。
+
+![深色工作区：三个独立终端与固定的终端宠物面板](assets/workspace-dark.png)
+
+<details>
+<summary>查看浅色界面</summary>
+
+![浅色工作区](assets/workspace-light.png)
+
+</details>
+
 保留以下早期版本录屏，展示实际操作方式。当前版本的界面布局、标签隔离和权限确认流程已有升级，以当前应用与文档为准。
 
 **自然语言转命令**：描述“查找所有大于 100 MB 的文件”，查看 AI 给出的命令，再按需执行。
@@ -42,6 +53,7 @@ AITerminal 是基于 Electron、xterm.js 和 SSH2 的开源桌面终端，将本
 
 ## 能做什么
 
+- **多会话工作区**：本地与不同 SSH 会话左右/上下分屏、拖动调宽与重排、窗格放大、会话搜索；布局可保存、导入和导出，不设商业会话数量配额。
 - **本地与远程终端**：直接打开本地 Shell，或连接 SSH；支持 Codex、Vim、tmux 等交互式程序。
 - **AI 问答与命令助手**：自然语言问答、`fix` 错误诊断、`analyze` 系统分析、`cmd` 自然语言转命令；支持流式回复、分屏、Markdown、代码高亮、数学公式和自定义回答要求。
 - **SSH 文件与命令**：密码/私钥登录、拖拽上传、`rfe` 浏览和下载远程文件、`myls` 点击下载并打开文件；`send` 直接发送 Shell 命令，输入 `/` 调出常用命令。
@@ -50,7 +62,7 @@ AITerminal 是基于 Electron、xterm.js 和 SSH2 的开源桌面终端，将本
 - **AI 运维**：对本地、远程或混合目标执行任务；高危命令执行前确认，可信任已核验指纹的指定 SSH 服务器以减少重复弹窗。
 - **终端交互**：`Ctrl+Shift+C/V` 复制粘贴；选中文本后 Enter 复制并取消选择；右键复制选中内容或粘贴。tmux/Vim 启用鼠标时接收鼠标和滚轮事件，`Shift+右键` 使用本地剪贴板。tmux 请启用 `set -g mouse on`。
 - **任务通知**：HTTPS Webhook 支持任务结果、程序正常/异常停止及屏幕输出关键词匹配；手动交互程序可从“🔔 运行并通知”启动。支持冷却、大小写及可选脱敏片段，详见 [通知说明](WEBHOOKS.md)。
-- **插件中心**：参数化工具、模型适配器、标准 MCP、任务事件、面板、配置、插件源和版本恢复；提供独立进程、Cordis 生命周期和开发 SDK。
+- **插件中心**：参数化工具、模型适配器、标准 MCP、任务事件、面板、配置、插件源和版本恢复；面板可固定到工作区并保持所属会话，提供独立进程、Cordis 生命周期和开发 SDK。
 - **凭据与连接保护**：SSH 首次连接确认 SHA-256 主机指纹，密钥变化默认阻断；SSH 凭据、模型 Key 和 Webhook URL 由系统加密存储管理。
 
 AI 跟随当前标签的终端环境：Windows 默认本地终端是 **WSL Ubuntu**，AI 本地接管、交互式程序和插件也在同一 Ubuntu 发行版中运行，使用 Linux 路径。Linux / macOS 使用本地 Shell，SSH 标签使用远程环境。启动本地接管时从可见终端当前目录开始；终端关闭或重建后需重新启动接管。
@@ -68,13 +80,14 @@ AI 跟随当前标签的终端环境：Windows 默认本地终端是 **WSL Ubunt
 | `/` | 搜索已配置的常用命令，选择后按 Enter 发送 |
 | `rfe /var/log` / `myls /var/log` | 浏览、下载或下载并打开 SSH 远端文件 |
 | `search 关键词` | 搜索本标签的 AI 接管历史索引 |
-| “AI 接管” / “🧩 插件” / “🔔 运行并通知” | 多步任务、插件工具与程序退出通知 |
+| “AI 接管” / 右上角“插件中心” / “运行并通知” | 多步任务、插件工具与程序退出通知 |
+| “左右分屏” / “上下分屏” / “保存工作区” | 同屏使用多个终端并保存布局；恢复时建立新会话，SSH 需手动重连 |
 
 详细操作、快捷键和更多原版录屏见 [使用手册](USER_GUIDE.md)。
 
 ## 安装与开始使用
 
-从 [最新版本下载页](https://github.com/Amo-Zeng/AITerminal/releases/latest) 下载对应平台的 **AITerminal** 安装包，核对该版本附带的 `SHA256SUMS.txt`。**1.6.1** 修复 `send` 与拖拽上传，补齐安装和使用文档；同时包含 1.6.0 的 Responses / Messages API、AI 与终端环境统一，以及自动同步 Releases 的发布流程。
+从 [最新版本下载页](https://github.com/Amo-Zeng/AITerminal/releases/latest) 下载对应平台的 **AITerminal** 安装包，核对该版本附带的 `SHA256SUMS.txt`。**1.7.0** 新增原生终端分屏、工作区布局和固定插件面板，更新明暗界面、会话导航和可调 AI 侧栏；保留三种模型 API、WSL 同环境接管及自动同步 Releases 的发布流程。
 
 | 平台 | 安装包 | 运行条件 |
 | --- | --- | --- |
@@ -94,7 +107,7 @@ sudo xattr -r -d com.apple.quarantine /Applications/AITerminal.app
 
 然后重新打开应用。这个命令只移除指定应用的下载隔离属性，不能修复真正损坏的文件；校验和不一致时应重新下载。若安装位置不同，请修改路径。完整的 Windows WSL、Linux FUSE 和 macOS 排障步骤见 [安装指南](INSTALLATION.md)。
 
-启动后选择本地终端或配置 SSH；使用 AI 时填写自己的模型 API 地址、模型名与 Key。API 格式支持 **Chat Completions**（`/v1/chat/completions`）、**Responses**（`/v1/responses`）和 **Messages**（`/v1/messages`），可手动选择或根据完整 URL 自动识别，详见 [模型 API 配置](AI_PROVIDERS.md)。插件中心可从底部“🧩 插件”或 `Ctrl/Cmd+Shift+P` 打开。终端宠物和运维闯关无需模型 Key，也无需连接服务器。
+启动后选择本地终端或配置 SSH；使用 AI 时填写自己的模型 API 地址、模型名与 Key。API 格式支持 **Chat Completions**（`/v1/chat/completions`）、**Responses**（`/v1/responses`）和 **Messages**（`/v1/messages`），可手动选择或根据完整 URL 自动识别，详见 [模型 API 配置](AI_PROVIDERS.md)。插件中心可从右上角“插件中心”或 `Ctrl/Cmd+Shift+P` 打开。终端宠物和运维闯关无需模型 Key，也无需连接服务器。
 
 ## 一起建设插件生态
 

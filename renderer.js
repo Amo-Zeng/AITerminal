@@ -14,6 +14,7 @@
 	        let terminalTabs = new Map(); // 存储所有终端实例
 	        let activeTabId = 'tab-1';
         let tabCounter = 1;
+        let workspace = null;
 
         function readStoredObject(key) {
             return window.AITerminalStorage.readObject(localStorage, key);
@@ -52,7 +53,9 @@
 
 			  function syncTabAiConfig(tabId = activeTabId) {
 			    try {
-			      const savedConfig = readStoredObject('sshConfig');
+			      const info = terminalTabs.get(tabId);
+                  const savedConfig = info?.aiConfigSnapshot || readStoredObject('sshConfig');
+                  if (info) info.aiConfigSnapshot = sanitizeConfigForStorage(savedConfig);
 			      window.electronAPI?.aiConfigure?.(savedConfig, tabId).catch?.(() => {});
 			    } catch (error) {
 			      console.warn('sync tab AI config failed:', error);
@@ -108,7 +111,7 @@
 
 	  function isTabVisible(tabId) {
 	    const content = getTabContent(tabId);
-	    if (!content || !content.classList.contains('active')) return false;
+	    if (!content || !(workspace ? workspace.visible(tabId) && content.classList.contains('pane-visible') : content.classList.contains('active'))) return false;
 	    const info = terminalTabs.get(tabId);
 	    if (!info || !info.container) return false;
 	    const rect = info.container.getBoundingClientRect();
@@ -150,6 +153,7 @@
 	  function applyTabStatusClass(tabId, status) {
 	    const statusElement = getTabButton(tabId)?.querySelector('.terminal-tab-status');
 	    if (statusElement) statusElement.className = `terminal-tab-status ${status}`;
+        workspace?.updatePane(tabId);
 	  }
 
 	  function syncLocalResizeForTab(tabId) {
@@ -176,7 +180,7 @@
 	  async function startLocalTerminalForTab(tabId, options = {}) {
 	    const info = terminalTabs.get(tabId);
 	    if (!info || !info.terminal || !window.electronAPI?.terminalLocalStart) return false;
-	    if (info.isClosing || info.sshConnecting) return false;
+	    if (info.isClosing || info.sshConnecting || info.pendingRemote) return false;
 	    if (canSendToSsh(tabId) && !options.force) return false;
 	    if (info.localTerminalActive || info.localTerminalStarting) {
 	      syncLocalResizeForTab(tabId);
@@ -252,6 +256,7 @@
   function sendTerminalInput(tabId, data, options = {}) {
     if (!options.allowBackground && tabId !== activeTabId) return false;
     const info = terminalTabs.get(tabId);
+    if (info?.pendingRemote) { workspace?.message('此窗格等待 SSH 连接；点击“连接 SSH”选择目标。'); return false; }
     if (!info || info.isClosing || info.sshConnecting) return false;
 	    if (canSendToSsh(tabId)) {
 	      window.electronAPI?.sshSendRaw?.(data, tabId, options.encoding);
@@ -325,7 +330,7 @@
 	      info.fitAddon.fit();
 	      const rows = Math.max(0, (info.terminal.rows || 1) - 1);
 	      info.terminal.refresh(0, rows);
-	      if (focus) info.terminal.focus();
+	      if (focus && tabId === activeTabId) info.terminal.focus();
 	      if (syncSsh) {
 	        syncSshResizeForTab(tabId);
 	        syncLocalResizeForTab(tabId);
@@ -395,8 +400,8 @@
         }
 
         const terminalThemes = {
-            dark: { background: '#1a1a1a', foreground: '#ffffff', cursor: '#ffffff', selectionBackground: 'rgba(255, 255, 255, 0.3)' },
-            light: { background: '#ffffff', foreground: '#000000', cursor: '#000000', selectionBackground: 'rgba(0, 100, 200, 0.3)' },
+            dark: { background: '#11151c', foreground: '#dce3ee', cursor: '#87b9ff', selectionBackground: '#304765', black: '#242b38', red: '#f07882', green: '#8bcba4', yellow: '#e3c783', blue: '#82afff', magenta: '#baa5e8', cyan: '#7cc9d5', white: '#dce3ee' },
+            light: { background: '#ffffff', foreground: '#233047', cursor: '#3979d7', selectionBackground: '#d8e7fb', black: '#233047', red: '#b43b46', green: '#287044', yellow: '#855c0b', blue: '#245da8', magenta: '#7c4b9b', cyan: '#1e727d', white: '#68778c', brightBlack: '#69768a', brightRed: '#bd3848', brightGreen: '#247642', brightYellow: '#8e650a', brightBlue: '#286bcc', brightMagenta: '#8755af', brightCyan: '#217b89', brightWhite: '#33415a' },
             'solarized-dark': { background: '#002b36', foreground: '#839496', cursor: '#93a1a1', selectionBackground: 'rgba(147, 161, 161, 0.4)' },
             'solarized-light': { background: '#fdf6e3', foreground: '#657b83', cursor: '#586e75', selectionBackground: 'rgba(88, 110, 117, 0.4)' },
             monokai: { background: '#272822', foreground: '#f8f8f2', cursor: '#f8f8f0', selectionBackground: 'rgba(248, 248, 240, 0.3)' },
@@ -479,6 +484,7 @@
             console.log('Initializing app...');
             loadTerminalConfigEarly();
             initializeTerminal();
+            workspace = new window.AITerminalWorkspace();
             setupEventListeners();
             setupMenuEventListeners();
             setupModalKeyboardShortcuts();
@@ -556,7 +562,7 @@
         }
 
         // 创建新的终端标签页
-        function createTerminalTab(tabId, title, isActive = false) {
+        function createTerminalTab(tabId, title, isActive = false, options = {}) {
             const tabNumber = tabId.split('-')[1];
             const terminalContainer = document.getElementById(`terminalContainer-${tabNumber}`);
             
@@ -607,6 +613,9 @@
 		                sshConnecting: false,
 		                sshConnectToken: null,
                 title: title,
+                connectionConfig: options.connection || null,
+                pendingRemote: options.deferStart === true,
+                aiConfigSnapshot: sanitizeConfigForStorage(readStoredObject('sshConfig')),
                 container: terminalContainer,
                 resizeObserver: resizeObserver,
                 sshConnection: null, // 为每个标签页独立的SSH连接做准备
@@ -657,9 +666,10 @@
                 if (ownsTerminalTab(tabId, owner)) scheduleFitTerminalTab(tabId, { syncSsh: true });
             });
 
-            newTerm.write('\r\n\x1b[36m[AITerminal 本地终端启动中...]\x1b[0m\r\n');
-            newTerm.write('\x1b[90m提示: 这里默认就是本机 Shell；需要远程时再点击“连接SSH”。\x1b[0m\r\n');
-		            startLocalTerminalForTab(tabId);
+            if (options.deferStart) {
+                newTerm.write('\r\n\x1b[90m已恢复 SSH 连接信息，等待连接。\x1b[0m\r\n');
+                const connect = document.createElement('button'); connect.className = 'pending-connection btn btn-primary'; connect.textContent = '连接 SSH'; connect.dataset.workspaceAction = 'reconnect'; terminalContainer.parentElement.append(connect);
+            } else startLocalTerminalForTab(tabId);
 		            if (isActive) syncTabAiConfig(tabId);
         }
 
@@ -681,6 +691,7 @@
 
             const localMouse = (event) => event.shiftKey || terminal.modes.mouseTrackingMode === 'none';
             terminal.element.addEventListener('mousedown', (event) => {
+                if (workspace && isTabVisible(tabId) && tabId !== activeTabId) switchToTab(tabId, { focus: false });
                 if (event.button === 2 && localMouse(event)) {
                     // Preserve the selection instead of letting xterm move its
                     // hidden textarea under the pointer before copying.
@@ -698,6 +709,7 @@
             }, true);
             let wheelRemainder = 0;
             terminal.attachCustomWheelEventHandler((event) => {
+                if (workspace && isTabVisible(tabId) && tabId !== activeTabId) switchToTab(tabId, { focus: false });
                 if (!ownsActiveTerminal(tabId, terminal)) {
                     event.preventDefault();
                     return false;
@@ -755,10 +767,11 @@
 
 
         // 创建新的终端标签页
-        async function createNewTerminalTab() {
+        async function createNewTerminalTab(options = {}) {
             tabCounter++;
-            const newTabId = `tab-${tabCounter}`;
-            const newTitle = `终端 ${tabCounter}`;
+            const tabNumber = tabCounter;
+            const newTabId = `tab-${tabNumber}`;
+            const newTitle = options.title || `终端 ${tabNumber}`;
 	        const opened = await window.electronAPI.openTabSession(newTabId);
 	        if (!opened?.success) {
 	            showCustomAlert('新建标签失败', opened?.error || '主进程未能创建标签会话');
@@ -774,7 +787,7 @@
             newTab.setAttribute('data-tab-id', newTabId);
 	        newTab.setAttribute('data-action', 'switch-terminal-tab');
             newTab.innerHTML = `
-                <span class="terminal-tab-title">${newTitle}</span>
+                <span class="terminal-tab-title">${escapeHtml(newTitle)}</span>
                 <span class="terminal-tab-status disconnected"></span>
                 <button class="terminal-tab-close" data-action="close-terminal-tab" data-tab-id="${newTabId}" title="关闭标签页">×</button>
             `;
@@ -785,10 +798,10 @@
             const contentArea = document.querySelector('.terminal-content-area');
             const newContent = document.createElement('div');
             newContent.className = 'terminal-tab-content';
-            newContent.id = `tab-content-${tabCounter}`;
+            newContent.id = `tab-content-${tabNumber}`;
             newContent.setAttribute('data-tab-id', newTabId);
             newContent.innerHTML = `
-                <div class="terminal-container" id="terminalContainer-${tabCounter}">
+                <div class="terminal-container" id="terminalContainer-${tabNumber}">
                     <!-- Terminal will be initialized here -->
                 </div>
                 <div class="upload-hint">📁 拖拽文件到此处上传</div>
@@ -797,20 +810,29 @@
             contentArea.appendChild(newContent);
 
             // 创建终端实例
-            createTerminalTab(newTabId, newTitle, false);
+            createTerminalTab(newTabId, newTitle, false, options);
+            workspace?.created(newTabId, options);
             setupTerminalDragDrop();
 
             // 切换到新标签页
-            switchToTab(newTabId);
+            if (!options.background) switchToTab(newTabId);
             
             // 初始化AI接管按钮状态
             if (aiTakeoverManager && typeof aiTakeoverManager.updateTakeoverButtons === 'function') {
                 aiTakeoverManager.updateTakeoverButtons();
             }
+            return newTabId;
         }
 
         // 切换到指定标签页
-        function switchToTab(tabId) {
+        function switchToTab(tabId, options = {}) {
+            const previousTabId = activeTabId;
+            if (!terminalTabs.has(tabId)) return;
+            if (previousTabId !== tabId) {
+                const previous = terminalTabs.get(previousTabId);
+                if (previous) previous.commandDraft = commandInput.value;
+                commandInput.value = terminalTabs.get(tabId).commandDraft || '';
+            }
             // 更新标签页状态
             document.querySelectorAll('.terminal-tab').forEach(tab => {
                 tab.classList.remove('active');
@@ -860,7 +882,8 @@
                         }
                     });
 
-	                    scheduleFitTerminalTab(tabId, { focus: true, syncSsh: true });
+                        workspace?.selected(tabId, previousTabId);
+	                    scheduleFitTerminalTab(tabId, { focus: options.focus !== false, syncSsh: true });
 	            }
 	        }
 	    }
@@ -891,6 +914,8 @@
         // 执行关闭标签页操作
 	        function doCloseTab(tabId) {
 	            const tabInfo = terminalTabs.get(tabId);
+                if (!tabInfo) return;
+                const neighbor = workspace?.closed(tabId);
 	            if (tabInfo) {
 	                tabInfo.isClosing = true;
 	                tabInfo.sshConnectToken = null;
@@ -929,7 +954,7 @@
 
             // 如果关闭的是当前活动标签页，切换到第一个可用标签页
             if (activeTabId === tabId) {
-                const firstTabId = terminalTabs.keys().next().value;
+                const firstTabId = neighbor || terminalTabs.keys().next().value;
                 if (firstTabId) {
                     switchToTab(firstTabId);
                 }
@@ -938,6 +963,7 @@
                 updateSSHButton();
                 updateStatusIndicator();
             }
+            workspace?.render();
         }
 
         // 更新标签页状态
@@ -971,6 +997,8 @@
             if (tabInfo) {
                 tabInfo.title = title;
             }
+            workspace?.updatePane(tabId);
+            workspace?.renderSessions();
         }
 
 	        function setupEventListeners() {
@@ -980,7 +1008,7 @@
 	            });
 	            // Main App Listeners - 改进的resize处理
 	            window.addEventListener('resize', () => {
-                    scheduleFitTerminalTab(activeTabId, { syncSsh: true });
+                    if (workspace) workspace.fit(); else scheduleFitTerminalTab(activeTabId, { syncSsh: true });
 	            });
             sshButton.addEventListener('click', toggleSSH);
             commandInput.addEventListener('keypress', (e) => {
@@ -1022,7 +1050,8 @@
 	                    aiTakeoverManager.updateTakeoverButtons();
 	                }
 	                if (tabInfo && !tabInfo.isClosing) {
-	                    startLocalTerminalForTab(targetTabId);
+                        workspace?.backendChanged(targetTabId);
+	                    if (!workspace?.pendingRemote(targetTabId)) startLocalTerminalForTab(targetTabId);
 	                }
 	            });
 
@@ -1130,14 +1159,16 @@
                 });
 
 		                const handleDragOver = (e, element) => {
+                            if (workspace?.dragged) return;
 		                    e.stopPropagation();
-		                    if (canSendToSsh(activeTabId)) element.classList.add('drag-over');
+		                    if (canSendToSsh(element.closest('[data-tab-id]')?.dataset.tabId)) element.classList.add('drag-over');
 	                };
                 const handleDragLeave = (e, element) => {
                     e.stopPropagation();
                     element.classList.remove('drag-over');
                 };
                 const handleDrop = async (e, element) => {
+                    if (workspace?.dragged) return;
                     e.stopPropagation();
                     element.classList.remove('drag-over');
 		                    const targetTabId = element.closest('.terminal-tab-content')?.dataset?.tabId || activeTabId;
@@ -1287,7 +1318,7 @@
                 return;
             }
 
-            const savedConfig = readStoredObject('sshConfig');
+            const savedConfig = chatTabInfo.aiConfigSnapshot || readStoredObject('sshConfig');
             const isTerminalMode = savedConfig.aiDisplayMode === 'terminal';
 
             const resultHandler = (result) => { // Handles non-streaming responses and errors
@@ -1360,7 +1391,7 @@
 	            if (!tabInfo) return;
 	            tabInfo.aiResult = { ...result };
 	            tabInfo.aiResultComplete = !!isComplete;
-            const savedConfig = readStoredObject('sshConfig');
+            const savedConfig = tabInfo.aiConfigSnapshot || readStoredObject('sshConfig');
             if (savedConfig.aiDisplayMode === 'terminal') {
                 // This part is now only for NON-STREAMING results.
 	                // Streaming is handled by handleAiChat and updateStreamingContent.
@@ -1418,7 +1449,7 @@
                     <button class="ai-action-btn secondary close-ai-result" data-action="close-ai-result">🔙 关闭</button>
 	                </div>`;
 
-	            mainContent.appendChild(aiContainer);
+                    if (workspace) workspace.aiMounted(aiContainer); else mainContent.appendChild(aiContainer);
 	            enhanceAiContent(aiContainer);
         }
 
@@ -1468,7 +1499,7 @@
                 @keyframes streamingPulse { 0%, 80%, 100% { opacity: 0.3; } 40% { opacity: 1; } }`;
             document.head.appendChild(style);
 
-            mainContent.appendChild(aiContainer);
+            if (workspace) workspace.aiMounted(aiContainer); else mainContent.appendChild(aiContainer);
             window.currentAiResult = result;
         }
 
@@ -1477,7 +1508,7 @@
 	            if (!tabInfo || tabInfo.isClosing) return;
 	            if (tabInfo.aiResult) tabInfo.aiResult.response = content;
 	            tabInfo.aiResultComplete = !!isComplete;
-            const savedConfig = readStoredObject('sshConfig');
+            const savedConfig = tabInfo.aiConfigSnapshot || readStoredObject('sshConfig');
             if (savedConfig.aiDisplayMode === 'terminal') {
 	                if(getTabTerminal(tabId)) {
 	                    const newContent = content.substring(tabInfo.aiStreamContent.length);
@@ -1581,9 +1612,10 @@
 	            const existingContainer = document.getElementById('aiResultContainer');
 	            if (existingContainer) existingContainer.remove();
 	            document.querySelector('.main-content')?.classList.remove('ai-active');
+                    workspace?.syncAi();
 	            window.currentAiResult = null;
 	            const tabInfo = terminalTabs.get(tabId);
-	            const savedConfig = readStoredObject('sshConfig');
+	            const savedConfig = tabInfo?.aiConfigSnapshot || readStoredObject('sshConfig');
 	            if (!tabInfo?.aiResult || savedConfig.aiDisplayMode === 'terminal') return;
 	            if (tabInfo.aiResultComplete) renderAiResultFinal(tabInfo.aiResult, tabId);
 	            else {
@@ -1747,6 +1779,7 @@
         }
 
 	function renderRfeResult(files, remotePath, tabId = activeTabId) {
+            if (workspace) { workspace.fileResult(files, remotePath, tabId); return; }
 	    const tabInfo = terminalTabs.get(tabId);
 	    if (!tabInfo) return;
 
@@ -1931,6 +1964,7 @@
 	            }
             if (aiContainer && (!targetTabId || panelTabId === resolvedTabId)) {
                 aiContainer.remove();
+                workspace?.syncAi();
                 const mainContent = document.querySelector('.main-content');
                 if (mainContent) {
                     mainContent.classList.remove('ai-active');
@@ -2583,10 +2617,10 @@
 		        function updateSSHButton() {
 		            const connectedHere = refreshActiveConnectionState();
 		            if (connectedHere) {
-		                sshButton.innerHTML = '<span>🔌</span> 断开连接';
+		                sshButton.textContent = '断开 SSH';
 		                sshButton.className = 'btn ssh-button disconnect';
 		            } else {
-	                sshButton.innerHTML = '<span>🔗</span> 连接SSH';
+	                sshButton.textContent = '连接 SSH';
 	                sshButton.className = 'btn ssh-button connect';
 	            }
 	        }
@@ -2596,6 +2630,7 @@
 	            const activeInfo = terminalTabs.get(activeTabId);
 	            const status = isSSHConnected ? 'connected' : (activeInfo?.localTerminalActive ? 'local' : 'disconnected');
 	            statusIndicator.className = `status-indicator status-${status}`;
+                    workspace?.updatePane(activeTabId);
 	        }
 
 		        async function connectSSH() {
@@ -2640,6 +2675,15 @@
 		                return;
 		            }
 	            if (terminalTabs.get(ownerTabId) !== ownerTabInfo || ownerTabInfo.isClosing) return;
+                    ownerTabInfo.connectionConfig = sanitizeConfigForStorage(config);
+                    if (!config.host || !config.username) {
+                        updateTerminalConfig(); loadCommonCommands(); closeSSHModal();
+                        workspace?.message('设置已保存');
+                        return;
+                    }
+                    workspace?.backendChanged(ownerTabId, { preservePins: !!ownerTabInfo.pendingRemote });
+                    ownerTabInfo.pendingRemote = false;
+                    getTabContent(ownerTabId)?.querySelector('.pending-connection')?.remove();
             updateTerminalConfig(); // Save and apply terminal settings
             loadCommonCommands(); // Reload common commands
             closeSSHModal();
@@ -2706,7 +2750,7 @@
 	            } else {
 	                updateTabStatus(ownerTabId, 'disconnected');
                 ownerTerm?.write(`\r\n\x1b[31m[${result.message}]\x1b[0m\r\n`);
-                startLocalTerminalForTab(ownerTabId);
+                if (!workspace?.pendingRemote(ownerTabId)) startLocalTerminalForTab(ownerTabId);
 	            }
 	        }
 
@@ -2937,6 +2981,7 @@
             const profiles = readStoredObject('configProfiles');
             profiles[trimmedName] = currentConfig;
             localStorage.setItem('configProfiles', JSON.stringify(profiles));
+            workspace?.renderAssets();
             
             // 刷新下拉列表
             loadConfigProfiles();
@@ -3037,6 +3082,7 @@
             const profiles = readStoredObject('configProfiles');
             delete profiles[profileName];
             localStorage.setItem('configProfiles', JSON.stringify(profiles));
+            workspace?.renderAssets();
             
             // 刷新下拉列表
             loadConfigProfiles();
@@ -3220,11 +3266,16 @@
 	            }
 	            localStorage.setItem('webhookConfig', JSON.stringify({ ...webhookConfig, url: '' }));
 	            localStorage.setItem('sshConfig', JSON.stringify(sanitizeConfigForStorage(config)));
+                    const info = terminalTabs.get(targetTabId);
+                    if (info) { info.aiConfigSnapshot = sanitizeConfigForStorage(config); info.connectionConfig = sanitizeConfigForStorage(config); }
 	            await window.electronAPI?.aiConfigure?.(config, targetTabId);
+                    workspace?.renderAssets();
 	        }
 
 	        function loadSavedConfig() {
-	            const config = readStoredObject('sshConfig');
+	            const config = { ...readStoredObject('sshConfig'), ...getActiveTabInfo()?.aiConfigSnapshot, ...getActiveTabInfo()?.connectionConfig };
+                    // Restored workspaces never inherit another connection's startup command or trust decision.
+                    if (getActiveTabInfo()?.pendingRemote) { config.autoCommand = ''; config.trustServer = false; }
 	            const termConfig = readStoredObject('terminalConfig');
 	            const webhookConfig = readStoredObject('webhookConfig');
 
@@ -3296,7 +3347,7 @@
             // 同步更新全局UI主题
             updateGlobalTheme(newConfig.theme);
 
-	            scheduleFitTerminalTab(activeTabId, { syncSsh: true });
+	            if (workspace) workspace.fit(); else scheduleFitTerminalTab(activeTabId, { syncSsh: true });
 	            localStorage.setItem('terminalConfig', JSON.stringify(newConfig));
 	        }
 
@@ -3339,6 +3390,10 @@
 		            const connectToken = Symbol(`ssh-auto-connect:${ownerTabId}`);
 		            ownerTabInfo.sshConnectToken = connectToken;
 		            ownerTabInfo.isConnected = false;
+                    ownerTabInfo.connectionConfig = sanitizeConfigForStorage(config);
+                    workspace?.backendChanged(ownerTabId, { preservePins: !!ownerTabInfo.pendingRemote });
+                    ownerTabInfo.pendingRemote = false;
+                    getTabContent(ownerTabId)?.querySelector('.pending-connection')?.remove();
 
 	            if (ownerTabId === activeTabId) showTerminal();
 	            ownerTabInfo.terminal.write('\r\n\x1b[36m[尝试自动连接SSH...]\x1b[0m\r\n');
@@ -3381,7 +3436,7 @@
 	                        }
 	                    }, 500);
 	                } else {
-	                    startLocalTerminalForTab(ownerTabId);
+	                    if (!workspace?.pendingRemote(ownerTabId)) startLocalTerminalForTab(ownerTabId);
 	                }
 	                
 	                return result.success;
@@ -3393,7 +3448,7 @@
 		                ownerTabInfo.sshConnecting = false;
 		                setSshOwnerTab(ownerTabId, false);
 	                ownerTabInfo.terminal.write(`\r\n\x1b[31m[自动连接错误: ${error.message}]\x1b[0m\r\n`);
-	                startLocalTerminalForTab(ownerTabId);
+	                if (!workspace?.pendingRemote(ownerTabId)) startLocalTerminalForTab(ownerTabId);
 	                return false;
 	            }
 	        }
@@ -3621,9 +3676,10 @@
 
         // 保存当前会话
         function saveCurrentSession() {
-            const config = localStorage.getItem('sshConfig');
-            if (config) {
-                const publicConfig = sanitizeConfigForStorage(JSON.parse(config));
+            const info = getActiveTabInfo();
+            const config = info?.connectionConfig || info?.aiConfigSnapshot || readStoredObject('sshConfig');
+            if (Object.keys(config).length) {
+                const publicConfig = sanitizeConfigForStorage(config);
                 const blob = new Blob([JSON.stringify(publicConfig, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -3661,8 +3717,11 @@
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         try {
+	                        if (!ownsTerminalTab(targetTabId, targetTabInfo)) return;
 	                        const config = sanitizeConfigForStorage(JSON.parse(e.target.result));
 	                        localStorage.setItem('sshConfig', JSON.stringify(config));
+	                        targetTabInfo.aiConfigSnapshot = config;
+	                        targetTabInfo.connectionConfig = config;
 	                            if (ownsTerminalTab(targetTabId, targetTabInfo)) {
 	                                writeToTerminalTab(targetTabId, '\r\n\x1b[32m[会话配置已加载]\x1b[0m\r\n');
                             }
@@ -3683,6 +3742,7 @@
 🚀 AITerminal 使用指南
 
 📋 基础功能:
+• 本地终端: 打开即可使用；Windows 默认 WSL Ubuntu
 • SSH连接: 点击"连接"按钮配置服务器信息
 • 终端操作: 支持所有标准SSH终端功能
 • 远程图片: 远程图片文件直接点击下载查看
@@ -3703,6 +3763,11 @@
 • Ctrl+R: 重置终端
 • Ctrl+Shift+A: AI配置
 • Ctrl+T: 测试AI连接
+• Ctrl/Cmd+Shift+E: 左右分屏；加 Alt 为上下分屏
+• Ctrl/Cmd+Shift+←/→: 切换同组窗格
+• Ctrl/Cmd+Shift+F: 搜索会话
+• Ctrl/Cmd+Shift+P: 插件中心
+• Ctrl/Cmd+Shift+C/V: 复制/粘贴；选中文本后回车复制
 
 📁 文件操作:
 • Ctrl+U: 上传文件
@@ -3712,6 +3777,8 @@
 💡 提示:
 • 默认流式AI回复，添加 --no-stream 参数使用非流
 • 可以保存和加载会话配置
+• 右上角保存工作区，左侧导入/导出多窗格布局
+• 恢复布局创建新会话；SSH 需重连，不重放旧命令
 • 支持多种终端主题
 💡 更多问题请访问项目AITerminal https://github.com/Amo-Zeng/AITerminal 
             `;
@@ -4491,7 +4558,7 @@
             // 更新按钮显示状态
             function getDefaultTakeoverLabel() {
 		                if (getActiveTabInfo()?.aiWaitingForUserInput) return '💬 输入并继续';
-	                return canSendToSsh(activeTabId) ? '🤖 AI接管(远程)' : '🖥️ AI接管(本地)';
+	                return canSendToSsh(activeTabId) ? 'AI 接管 · SSH' : 'AI 接管 · 本地';
             }
 
             function resetTakeoverStartButtonLabel() {
@@ -4549,6 +4616,7 @@
 	                const takeoverTabId = activeTabId;
 	                const takeoverTabInfo = terminalTabs.get(takeoverTabId);
 	                if (!takeoverTabInfo || takeoverTabInfo.aiTakeoverStarting) return;
+                        if (takeoverTabInfo.pendingRemote) { workspace?.message('请先连接此 SSH 会话，再启动 AI 接管。'); return; }
 	                const task = commandInput.value.trim();
                 if (!task) {
                     showNotification('请在输入框中输入要执行的任务', 'warning');
@@ -4642,7 +4710,7 @@
 	                            aiTakeoverManager.updateTakeoverButtons();
 	                        }
 	                        commandInput.disabled = false;
-	                        commandInput.placeholder = '直接输入与AI对话，或使用特殊命令 (myls, rfe, fix, analyze, cmd) - 输入 / 调用常用命令';
+	                        commandInput.placeholder = '描述你想完成的任务，或输入 / 选择命令…';
 	                        showNotification('AI接管模式已停止', 'info');
                     }
                 } catch (error) {
@@ -4726,7 +4794,7 @@
 	                    commandInput.placeholder = '🤖 AI接管模式运行中...';
 	                } else {
 	                    commandInput.disabled = false;
-	                    commandInput.placeholder = '直接输入与AI对话，或使用特殊命令 (myls, rfe, fix, analyze, cmd) - 输入 / 调用常用命令';
+	                    commandInput.placeholder = '描述你想完成的任务，或输入 / 选择命令…';
 	                    resetTakeoverStartButtonLabel();
 	                }
 	            }
@@ -4825,7 +4893,7 @@
                                 updateTakeoverButtons();
                                 commandInput.disabled = false;
                                 commandInput.value = '';
-                                commandInput.placeholder = '直接输入与AI对话，或使用特殊命令 (myls, rfe, fix, analyze, cmd) - 输入 / 调用常用命令';
+                                commandInput.placeholder = '描述你想完成的任务，或输入 / 选择命令…';
                                 
                                 // 恢复按钮文本
                                 resetTakeoverStartButtonLabel();

@@ -188,11 +188,12 @@ const smokeExpression = `(async () => {
     }
 })()`;
 
-async function runElectronSmoke(runTest) {
+async function runElectronSmoke(runTest, options = {}) {
     const electronPath = getElectronPath();
     assertElectronBinaryCompatible(electronPath);
     const port = await reservePort();
     const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'aiterminal-electron-smoke-'));
+    if (options.prepareProfile) await options.prepareProfile(profile);
     const args = [
         '--headless',
         '--no-sandbox',

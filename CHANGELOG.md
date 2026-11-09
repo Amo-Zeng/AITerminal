@@ -4,6 +4,15 @@ All notable changes to AITerminal will be documented here.
 
 ## Unreleased
 
+## 1.7.0 - 2026-11-09
+
+- Added a native multi-session workspace: horizontal/vertical recursive splits, draggable dividers, pane focus, zoom, detach, session search, layout export/import and credential-free saved workspaces. Existing local PTYs and SSH sessions keep their xterm instance and per-session routing when panes move.
+- Added an updated compact workbench UI with the original logo, sidebar session navigator, connection status, light/dark chrome, per-session input drafts, resizable AI dock, remote SFTP file pane and pinnable plugin panels.
+- Added real workspace regression coverage for local PTY and two independent loopback SSH/SFTP servers: input/output isolation, resize propagation, DPI changes, move/zoom/detach, model configuration isolation, credential-free restore, closed-session rejection and concurrent tab creation.
+- Fixed delayed resize callbacks stealing focus, concurrent tab creation sharing DOM IDs, and tab switches replacing a session's AI settings with the global default. Disconnected/restored SSH panes now wait for reconnection instead of starting a local shell.
+- Use SFTP directory metadata for spaces, Unicode and newline filenames. File operations retain their originating SSH connection across dialogs and asynchronous calls, rejecting replaced backends.
+- The workspace has no commercial session quota. Functional checks and their limits are recorded in [workspace verification](WORKSPACE_VERIFICATION.md); sustained throughput and memory budgets remain future work.
+
 ## 1.6.1 - 2026-11-09
 
 - Restored the macOS quarantine command, original support email/QQ group, community acknowledgments and legacy feature instructions in both READMEs. Added installation/troubleshooting, Chinese/English user guides and a documentation index; preserved all original demo topics through fixed historical links.

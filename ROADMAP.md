@@ -2,8 +2,13 @@
 
 AITerminal 已开放桌面终端、AI 执行链和插件宿主源码。欢迎将真实需求变成小而完整的贡献；以下是协作方向，不是交付日期承诺。提出方案时请给出可重现问题、实现边界和验收方法。
 
+1.7.0 已实现 [HexHub 对比评估](HEXHUB_ASSESSMENT.md) 中的原生分屏、会话搜索、布局保存/恢复、SFTP 文件面板及绑定会话的固定插件面板，并更新主界面。操作见 [使用手册](USER_GUIDE.md#多会话工作区)，范围与证据见 [工作区验证](WORKSPACE_VERIFICATION.md)。主机树、完整命令批量执行、跨会话 AI 编排和对外 MCP 服务端仍待实现；持续高输出的背压、内存预算与长时间负载测量仍是可靠性方向。
+
+Version 1.7.0 implements native splits, session search, saved layouts, SFTP file panes and session-bound pinned plugin panels, with updated UI. Host trees, batch commands, cross-session AI orchestration and an external MCP server remain planned. See [verification](WORKSPACE_VERIFICATION.md) for actual coverage; sustained-output backpressure and resource budgets remain open work.
+
 | 方向 / Area | 可以贡献什么 / Opportunities | 验收关注点 / Evidence |
 | --- | --- | --- |
+| 会话工作区 / Session workspaces | 主机分组、收藏、OpenSSH 配置导入、批量命令、目录恢复 / Host groups, favorites, OpenSSH import, batch commands and directory restore | 目标与取消独立；恢复不重放命令；真实 PTY/SSH 与负载验证 / Target ownership, safe restore and real backend checks |
 | 插件入门 / Plugin onboarding | 英文 API 示例、小型离线插件、错误诊断说明 / English examples, small offline plugins, actionable diagnostics | 从干净目录生成、加载、运行、打包；无 Key 可复现 / Works from a clean checkout |
 | 运维工具 / Operations plugins | Kubernetes、日志分析、备份校验、交互式 CLI 助手 / Kubernetes, log analysis, backup verification, CLI helpers | 明确目标与权限；只读优先；写操作审计、取消和清理 / Explicit targets, audited writes, cancellation |
 | 模型与 MCP / Models and MCP | 协议适配、MCP OAuth 设计、Schema 兼容性、真实服务样例 / Protocol adapters, OAuth design, schema compatibility | 不向插件暴露宿主 Key；失败诊断、超时与标签隔离 / Credential boundaries, failures and isolation |

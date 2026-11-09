@@ -38,7 +38,7 @@ npm run plugin:dev -- validate ../hello-aiterminal
 npm run plugin:dev -- pack ../hello-aiterminal ../example.hello.aitplugin.json
 ```
 
-打开“🧩 插件 → 加载开发目录”，选择目录，预览安装并在当前标签启用，运行问候工具。修改源码后重新导入；宿主执行的是经预览的不可变快照。在第二个标签验证状态与面板不串内容，再检查停用、取消和关闭标签后的清理。
+打开右上角“插件中心 → 加载开发目录”，选择目录，预览安装并在当前标签启用，运行问候工具。修改源码后重新导入；宿主执行的是经预览的不可变快照。在第二个标签验证状态与面板不串内容，再检查停用、取消和关闭标签后的清理。
 
 插件约定：
 
@@ -60,6 +60,7 @@ npm run plugin:dev -- pack ../hello-aiterminal ../example.hello.aitplugin.json
 | 本地 AI / 插件执行环境和目录 | `npm run smoke:local-environment`；Windows 需已初始化的 WSL Ubuntu |
 | Webhook、退出与输出匹配 | `npm run smoke:notifications`、`npm run smoke:config-modal` |
 | 终端、剪贴板、尺寸和鼠标 | `npm run smoke:clipboard`、`npm run smoke:terminal`；Unix 安装 tmux 后运行 `npm run smoke:tmux` |
+| 分屏、工作区、焦点与会话隔离 | `npm run smoke:workspace`（两个本机 SSH/SFTP 服务）；`node scripts/sessionBaseline.js --splits`（32 个本地 PTY、8 可见窗格功能检查） |
 | `send`、常用命令、拖拽文件路径 | `npm test`、`npm run smoke:documented-flows`；Windows CI 验证真实 File 桥接，Shell 发送需 WSL |
 | Markdown、IPC、凭据与配置 | 相关单测、`npm run smoke:renderer-security`、`npm run smoke:config-modal` |
 | 原生依赖和打包 | 对应平台构建、`npm run verify:package-source`、`npm run smoke:package-startup`；Windows 加 `npm run verify:win-package` |

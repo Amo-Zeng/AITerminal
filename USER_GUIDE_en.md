@@ -16,6 +16,18 @@ Open SSH settings, enter host, port and username, and choose password or private
 
 Each tab owns its connection, output, AI configuration/history, takeover tasks and plugin instances. Closing a tab cleans up those resources; background responses remain with their originating tab.
 
+## Multi-session workspaces
+
+Use the horizontal/vertical split buttons to open an independent local terminal beside the current pane. Drag dividers to resize; double-click to restore equal sizes. Drag a session from the sidebar or tab strip onto an edge of another pane to rearrange it. Zoom shows one pane temporarily; detach moves it to a separate tab. Moving panes retains their xterm and PTY/SSH connection. Click a pane to direct keyboard input to it.
+
+Search sessions by name or hostname; click a pane title to rename it. Saved SSH profiles appear under Connections and open in new sessions, without sending their startup commands automatically.
+
+Save workspace stores the layout locally; Export layout writes JSON and Import layout opens it. Layouts contain session names, connection identities and pinned-panel references, without passwords, key contents, API keys, Webhook URLs, processes or commands. Hostnames, usernames and private-key paths can still appear; inspect before sharing. Restore appends new sessions and preserves existing ones. Local panes start new shells; SSH panes require manual reconnection. Old processes, working directories and tasks are not restored. Disconnected SSH panes also wait for reconnection instead of falling back to a local shell.
+
+The bottom input labels its target and retains each session's draft and AI settings. The AI sidebar follows focus and can be resized. Pin a plugin panel to keep it visible with its original session ownership. Restoring a panel reference does not install/enable plugins or resume tasks; the user's existing defaults for new tabs still apply.
+
+Commands currently run per session; batch execution, keystroke broadcasting and AI orchestration across sessions remain planned. There is no commercial session quota, but usable scale depends on resources. Imported layouts are validated with limits of 512 sessions, 32 nesting levels and 1 MiB. See [workspace verification](WORKSPACE_VERIFICATION.md) for measured coverage.
+
 ![Earlier SSH configuration and connection demo](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/ssh-connect.gif)
 
 These recordings are preserved from the original README. UI layout and confirmation behavior have since changed; follow the current app and instructions.
@@ -52,7 +64,7 @@ See [AI takeover](AI_TAKEOVER_MODE_README.md) for targets, interaction and permi
 These features require SSH in the current tab. Use the local shell and file manager on local tabs.
 
 - **Upload:** drag local files from your system file manager into the terminal or bottom input. Files go to the current SSH directory. The upload button also opens a file picker.
-- **`rfe [path]`:** browse a directory, click subdirectories to navigate and click files to download. Omitting the path queries the current remote directory. Quote paths with spaces, such as `rfe "/home/user/my logs"`.
+- **`rfe [path]`:** open an SFTP file pane below its terminal, which remains usable. Click directories to navigate, files to download and open locally, or the download arrow to choose a save location. Omitting the path queries the current remote directory. Quote paths with spaces, such as `rfe "/home/user/my logs"`. The pane's file button starts from the SSH default directory.
 - **`myls [path]`:** show a terminal file listing with clickable filenames. Clicking downloads the file and opens it in the local default application, useful for remote images or documents.
 - **Download:** the download control also accepts a remote file path. Download-and-open brings a file to your computer; it does not launch a local viewer on the remote host.
 
@@ -77,6 +89,8 @@ The configuration dialog can save, load and delete named profiles. Profiles cont
 
 File → Save session / Load session exports/imports a JSON **configuration**, not running processes, SSH connections, screen contents or AI conversation history. Passwords, key passphrases, model keys and Webhook URLs are excluded. Review imported settings in the configuration dialog before saving/connecting; configure credentials again on a new computer. Exported files may still contain hostnames, usernames and paths.
 
+This single-configuration export differs from Save workspace in the top-right toolbar; use workspace layouts to reopen multiple panes.
+
 ## Appearance and shortcuts
 
 Terminal settings include font, size, theme, cursor shape (block/underline/bar), cursor blink and scrollback lines. Resizing adjusts the visible terminal and updates background tabs when they become visible.
@@ -88,6 +102,11 @@ Terminal settings include font, size, theme, cursor shape (block/underline/bar),
 | Right click | Copy a selection, otherwise paste |
 | Shift+right click | Use the local clipboard even when an application tracks mouse input |
 | `Ctrl/Cmd+Shift+P` | Open the Plugin Center |
+| `Ctrl/Cmd+Shift+E` | Split left/right beside the current pane |
+| `Ctrl/Cmd+Alt+Shift+E` | Split top/bottom beside the current pane |
+| `Ctrl/Cmd+Shift+Left/Right` | Focus the previous/next pane in the split group |
+| `Ctrl/Cmd+Shift+F` | Search sessions |
+| Arrow keys / Home on a focused divider | Adjust the ratio / restore equal sizes; dragging and double-clicking also work |
 | `set -g mouse on` in tmux | Enable tmux mouse handling |
 
 When tmux/Vim tracks the mouse, that application receives ordinary mouse and wheel events; its behavior differs from scrolling terminal history.

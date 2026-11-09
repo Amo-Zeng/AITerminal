@@ -4,7 +4,7 @@ const path = require('path');
 const asar = require('@electron/asar');
 const { findPackagedExecutable } = require('./packageStartupSmoke');
 function runtimeFiles(root) {
-    const files = ['main.js', 'preload.js', 'renderer.js', 'rendererSecurity.js', 'rendererStorage.js', 'pluginCenter.js', 'pluginCenter.css', 'index.html'];
+    const files = ['main.js', 'preload.js', 'renderer.js', 'rendererSecurity.js', 'rendererStorage.js', 'pluginCenter.js', 'pluginCenter.css', 'workspaceRenderer.js', 'workspace.css', 'index.html'];
     for (const directory of ['lib', 'plugins']) {
         const walk = relative => {
             for (const entry of fs.readdirSync(path.join(root, relative), { withFileTypes: true })) {

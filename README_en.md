@@ -13,6 +13,17 @@ AITerminal is an open-source desktop terminal built with Electron, xterm.js and 
 
 ## Demos
 
+**1.7.0 workspace:** independent terminals share a layout with a plugin panel pinned to its session. These are real application screenshots showing local tests and plugin example validation.
+
+![Dark workspace with three independent terminals and a pinned Terminal Pet panel](assets/workspace-dark.png)
+
+<details>
+<summary>Light appearance</summary>
+
+![Light workspace](assets/workspace-light.png)
+
+</details>
+
 These recordings from earlier versions show the application in use. The current UI, tab isolation and command confirmation flow have since been updated; follow the current application and documentation for exact behavior.
 
 **Natural language to commands**: ask to find files larger than 100 MB, review the suggested command and execute it when needed.
@@ -42,6 +53,7 @@ These recordings from earlier versions show the application in use. The current 
 
 ## Features
 
+- Native multi-session workspaces: split local and different SSH terminals horizontally or vertically, resize/rearrange/zoom panes, search sessions and save/import/export layouts, without a commercial session quota.
 - Local and SSH terminals with real PTY support for Codex, Vim, tmux and other interactive tools.
 - AI chat, `fix` diagnostics, `analyze` system analysis and `cmd` natural-language commands; streaming replies, split views, Markdown, code highlighting, math rendering and custom answer requirements.
 - Password/key SSH login, drag-and-drop uploads, `rfe` remote browsing/downloads, and `myls` to download and open files. Use `send` for shell commands and `/` for saved commands.
@@ -50,7 +62,7 @@ These recordings from earlier versions show the application in use. The current 
 - AI operations on local, remote or mixed targets; confirmation before recognized high-risk commands, with optional trust for a verified SSH server identity.
 - `Ctrl+Shift+C/V` clipboard shortcuts and Enter to copy and clear a selection. Right click copies a selection or pastes; tmux/Vim mouse tracking receives mouse/wheel input, with Shift+right click for the local clipboard. Enable tmux mouse mode with `set -g mouse on`.
 - HTTPS Webhooks for task results, program exits and output keyword matches. Use “🔔 Run and notify” for manual interactive commands. Case sensitivity, cooldowns and redacted excerpts are configurable; see [notification details](WEBHOOKS.md).
-- A Plugin Center with parameterized tools, model adapters, standard MCP, task events, panels, configuration, catalogs and version recovery. Code plugins use dedicated processes and a Cordis lifecycle.
+- A Plugin Center with parameterized tools, model adapters, standard MCP, task events, panels, configuration, catalogs and version recovery. Pin panels to the workspace while keeping their original session ownership. Code plugins use dedicated processes and a Cordis lifecycle.
 - SSH host fingerprint verification and platform-encrypted storage for SSH credentials, model API keys and Webhook URLs.
 
 AI follows the current tab's terminal environment. On Windows, the local terminal, AI takeover, interactive programs and plugins all use the same **WSL Ubuntu** distribution and Linux paths. Linux/macOS use their local shell; SSH tabs use the remote environment. Local takeover starts in the visible terminal's current directory. Restart takeover after closing or replacing its terminal.
@@ -69,12 +81,13 @@ Enter these in the bottom command/AI input. Typing inside the terminal goes dire
 | `rfe /var/log` / `myls /var/log` | Browse/download SSH files or download and open them locally |
 | `search keyword` | Search this tab's AI takeover history index |
 | AI takeover / Plugin Center / Run and notify | Multi-step tasks, plugin tools and program-exit notifications |
+| Horizontal/vertical split / Save workspace | Show independent terminals together and save their layout; reopening creates new sessions and requires manual SSH reconnection |
 
 See the [user guide](USER_GUIDE_en.md) for detailed instructions, shortcuts and additional original recordings.
 
 ## Install
 
-Download an **AITerminal** package from the [latest release](https://github.com/Amo-Zeng/AITerminal/releases/latest) and verify `SHA256SUMS.txt`. **1.6.1** fixes `send` and drag-and-drop uploads and restores installation and usage documentation. It also includes 1.6.0's Responses / Messages APIs, shared terminal environment for AI execution and automatic Release publishing.
+Download an **AITerminal** package from the [latest release](https://github.com/Amo-Zeng/AITerminal/releases/latest) and verify `SHA256SUMS.txt`. **1.7.0** adds native terminal splits, saved workspaces and pinned plugin panels, with updated light/dark UI, session navigation and a resizable AI sidebar. All three model APIs, the shared WSL execution environment and automatic Release publishing remain available.
 
 | Platform | Package | Requirements |
 | --- | --- | --- |
@@ -94,7 +107,7 @@ sudo xattr -r -d com.apple.quarantine /Applications/AITerminal.app
 
 Open the app again. This removes the quarantine attribute from this app only; it does not repair corrupted downloads. Re-download if the checksum differs, and adjust the path if installed elsewhere. See [installation and troubleshooting](INSTALLATION.md#english) for all three platforms.
 
-Open a local terminal or configure SSH. For AI features, supply your model API endpoint, model name and key. AI settings support **Chat Completions** (`/v1/chat/completions`), **Responses** (`/v1/responses`) and **Messages** (`/v1/messages`). Select a format or use a full endpoint for automatic detection; see [Model API configuration](AI_PROVIDERS.md). Open the Plugin Center from the bottom toolbar or `Ctrl/Cmd+Shift+P`. Terminal Pet and Ops Quest work without model credentials or a server connection.
+Open a local terminal or configure SSH. For AI features, supply your model API endpoint, model name and key. AI settings support **Chat Completions** (`/v1/chat/completions`), **Responses** (`/v1/responses`) and **Messages** (`/v1/messages`). Select a format or use a full endpoint for automatic detection; see [Model API configuration](AI_PROVIDERS.md). Open the Plugin Center from the top-right button or `Ctrl/Cmd+Shift+P`. Terminal Pet and Ops Quest work without model credentials or a server connection.
 
 ## Build the plugin ecosystem with us
 

@@ -170,12 +170,12 @@ async function checkTmux({ evaluate, click, wheel }) {
             })()`);
             await eventually(async () => await evaluate("terminalTabs.get('tab-1').terminal.cols") !== beforeCols && await aligned(), `tmux font size ${fontSize}`);
         }
-        await evaluate("document.querySelector('.main-content').classList.add('ai-active')");
+        await evaluate("renderAiResult({response:'Tmux layout regression',command:'ai'},true,'tab-1')");
         await eventually(async () => {
             const fit = await evaluate("terminalTabs.get('tab-1').terminal.cols < " + size.cols * 0.7);
             return fit && await aligned();
         }, 'tmux fits alongside the AI panel');
-        await evaluate("document.querySelector('.main-content').classList.remove('ai-active')");
+        await evaluate("closeAiResult(true,'tab-1')");
         await eventually(async () => await evaluate("terminalTabs.get('tab-1').terminal.cols") === size.cols && await aligned(), 'tmux restores full width');
 
         // Compare real rendered divider positions, not just the parsed buffer.
