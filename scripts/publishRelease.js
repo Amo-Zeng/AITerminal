@@ -52,6 +52,9 @@ function releaseNotes(identity, changelog) {
         '- Linux x64：下载 AppImage，并添加执行权限。\n' +
         '- macOS arm64：下载 DMG；此包未签名、未公证，请核验来源。\n\n' +
         '请使用 SHA256SUMS.txt 核验附件；各平台 SBOM 和源码对应关系随包提供。\n\n' +
+        'macOS：将校验无误的应用拖入 Applications；若提示“已损坏”或无法验证开发者，可在系统终端执行：\n\n' +
+        '```bash\nsudo xattr -r -d com.apple.quarantine /Applications/AITerminal.app\n```\n\n' +
+        `安装与排障 / Installation: https://github.com/${identity.repository}/blob/${identity.sha}/INSTALLATION.md\n\n` +
         `Source: https://github.com/${identity.repository}/commit/${identity.sha}\n` +
         `Build: https://github.com/${identity.repository}/actions/runs/${identity.runId}\n\n` +
         `<!-- aiterminal-release ${JSON.stringify({ sha: identity.sha, runId: identity.runId, runNumber: identity.runNumber, version: identity.version })} -->`;
