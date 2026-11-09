@@ -1,6 +1,6 @@
 {
   "name": "aiterminal",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "AI驱动的智能终端 - 支持本地终端与SSH远程管理",
   "main": "main.js",
   "scripts": {
@@ -11,6 +11,7 @@
     "security:scan": "node scripts/checkSecrets.js",
     "smoke:config-modal": "node scripts/configModalSmoke.js",
     "smoke:clipboard": "node scripts/clipboardSmoke.js",
+    "smoke:documented-flows": "node scripts/documentedFlowsSmoke.js",
     "smoke:terminal": "node scripts/terminalInteractionSmoke.js",
     "smoke:tmux": "node scripts/terminalInteractionSmoke.js --tmux",
     "smoke:plugins": "node scripts/pluginCenterSmoke.js",

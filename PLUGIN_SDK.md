@@ -98,7 +98,7 @@ while (!ctx.signal.aborted) {
 plugin_tool("aiterminal.docker-tools", "list", {})
 ```
 
-输入、目标、当前启用版本和执行内容均在主进程校验。一次模型请求最多处理 8 轮、每轮 16 个工具调用。模型适配器在插件详情中按标签选用，示例见 [模型策略](plugins/model-policy/index.js)。当前宿主代理使用已有的 OpenAI-compatible 模型连接；其他协议的适配器需自行实现协议部分，SDK 不向其直接交付宿主 API Key。
+输入、目标、当前启用版本和执行内容均在主进程校验。一次模型请求最多处理 8 轮、每轮 16 个工具调用。模型适配器在插件详情中按标签选用，示例见 [模型策略](plugins/model-policy/index.js)。宿主代理跟随本标签配置的 Chat Completions、Responses 或 Messages 协议，见 [模型 API](AI_PROVIDERS.md)；其他协议的适配器需自行实现协议部分，SDK 不向其直接交付宿主 API Key。
 
 ## 标准 MCP
 

@@ -7,6 +7,8 @@
 - **插件**：开发一个实用工具、趣味面板、任务通知、模型适配器或 MCP 集成。先读 [插件使用](PLUGINS.md)、[SDK](PLUGIN_SDK.md) 与 [英文入门](PLUGIN_QUICKSTART.md)。
 - **终端与可靠性**：帮助复现 Windows WSL、SSH、多标签、交互式 CLI、tmux 与 resize 问题。
 - **文档与示例**：补充小型可运行插件、英文 API 示例、清晰的故障排查说明。
+
+文档入口见 [文档索引](DOCUMENTATION.md)。调整首页时保留安装排障命令、联系方式、功能入口、原演示与贡献者致谢；较长说明可移动到使用手册并留下明确链接。行为或平台发生变化时同步中英文说明，不删除仍适用的操作步骤。
 - **测试与发布**：改进可复现的回归测试、三平台验证及安装包可追溯性。
 
 查看 [路线图](ROADMAP.md) 和 [help wanted](https://github.com/Amo-Zeng/AITerminal/issues?q=is%3Aissue%20is%3Aopen%20label%3A%22help%20wanted%22)。新插件可提交 [插件提案](https://github.com/Amo-Zeng/AITerminal/issues/new?template=plugin_proposal.yml)；较大的 API 或架构变更请先在 Issue / [Discussions](https://github.com/Amo-Zeng/AITerminal/discussions) 描述问题、方案与验收条件，避免重复工作。
@@ -58,6 +60,7 @@ npm run plugin:dev -- pack ../hello-aiterminal ../example.hello.aitplugin.json
 | 本地 AI / 插件执行环境和目录 | `npm run smoke:local-environment`；Windows 需已初始化的 WSL Ubuntu |
 | Webhook、退出与输出匹配 | `npm run smoke:notifications`、`npm run smoke:config-modal` |
 | 终端、剪贴板、尺寸和鼠标 | `npm run smoke:clipboard`、`npm run smoke:terminal`；Unix 安装 tmux 后运行 `npm run smoke:tmux` |
+| `send`、常用命令、拖拽文件路径 | `npm test`、`npm run smoke:documented-flows`；Windows CI 验证真实 File 桥接，Shell 发送需 WSL |
 | Markdown、IPC、凭据与配置 | 相关单测、`npm run smoke:renderer-security`、`npm run smoke:config-modal` |
 | 原生依赖和打包 | 对应平台构建、`npm run verify:package-source`、`npm run smoke:package-startup`；Windows 加 `npm run verify:win-package` |
 

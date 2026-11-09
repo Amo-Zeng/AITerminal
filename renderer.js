@@ -1100,7 +1100,8 @@
 
                     const files = e.dataTransfer.files;
                     if (files.length > 0) {
-                        const localPaths = Array.from(files).map(f => f.path);
+                        const localPaths = getDroppedFilePaths(files, targetTabId);
+                        if (!localPaths.length) return;
 		                        writeToTerminalTab(targetTabId, `\r\n\r\n\x1b[36m[正在上传 ${files.length} 个文件...]\x1b[0m\r\n`);
 		                        const result = await window.electronAPI.sshDragUpload(localPaths, targetTabId);
 		                        if (!ownsTerminalTab(targetTabId, targetTabInfo)) return;
@@ -1145,7 +1146,8 @@
 
                     const files = e.dataTransfer.files;
                     if (files.length > 0) {
-                        const localPaths = Array.from(files).map(f => f.path);
+                        const localPaths = getDroppedFilePaths(files, targetTabId);
+                        if (!localPaths.length) return;
 		                        writeToTerminalTab(targetTabId, `\r\n\r\n\x1b[36m[正在上传 ${files.length} 个文件...]\x1b[0m\r\n`);
 		                        const result = await window.electronAPI.sshDragUpload(localPaths, targetTabId);
 		                        if (!ownsTerminalTab(targetTabId, targetTabInfo)) return;
@@ -1157,6 +1159,17 @@
                 container.addEventListener('dragleave', (e) => handleDragLeave(e, container));
                 container.addEventListener('drop', (e) => handleDrop(e, container));
             });
+        }
+
+        function getDroppedFilePaths(files, tabId) {
+            try {
+                const paths = Array.from(files, file => window.electronAPI.getPathForFile(file));
+                if (!paths.length || paths.some(path => !path)) throw new Error('请从文件管理器拖入本地文件');
+                return paths;
+            } catch (error) {
+                writeToTerminalTab(tabId, `\r\n[无法读取拖入文件: ${error.message}]\r\n`);
+                return [];
+            }
         }
 
         // --- Special Command Handling ---
@@ -1177,6 +1190,27 @@
 
             if (command === 'help') {
                 showHelpGuide();
+                return;
+            }
+
+            // Preserve the shell payload, including quotes, spaces and pipes.
+            // Dispatch before the fallback to chat and use the normal audit path.
+            if (/^send(?:\s|$)/.test(commandStr)) {
+                const commandToSend = commandStr.slice(4).trim();
+                if (!commandToSend) {
+                    writeToTerminalTab(commandTabId, '\r\n[用法: send <Shell 命令>]\r\n');
+                    return;
+                }
+                const owner = terminalTabs.get(commandTabId);
+                if (commandTabId === activeTabId) showTerminal();
+                try {
+                    const result = await window.electronAPI.terminalExecuteAudited(commandToSend, commandTabId);
+                    if (ownsTerminalTab(commandTabId, owner) && !result?.success) {
+                        writeToTerminalTab(commandTabId, `\r\n[命令未执行: ${result?.error || '未知错误'}]\r\n`);
+                    }
+                } catch (error) {
+                    if (ownsTerminalTab(commandTabId, owner)) writeToTerminalTab(commandTabId, `\r\n[命令发送失败: ${error.message}]\r\n`);
+                }
                 return;
             }
 
@@ -1217,19 +1251,6 @@
                 const useStreaming = !args.includes('--no-stream');
                 const fullInput = [command, ...args.filter(a => a !== '--no-stream')].join(' ');
 	                handleAiChat(fullInput, useStreaming, command, commandTabId);
-                return;
-            }
-
-            // Handle send command - directly send to the current terminal backend (local or SSH)
-            if (command === 'send') {
-	                const commandToSend = args.join(' ');
-	                if (!commandToSend) {
-	                    writeToTerminalTab(commandTabId, `\r\n\x1b[31m[错误: send命令需要指定要发送的命令]\x1b[0m\r\n`);
-	                    return;
-	                }
-	                            if (commandTabId === activeTabId) showTerminal();
-	                writeToTerminalTab(commandTabId, `\r\n\x1b[36m[发送命令: ${commandToSend}]\x1b[0m\r\n`);
-	                sendTerminalInput(commandTabId, commandToSend + '\r', { allowBackground: true });
                 return;
             }
 

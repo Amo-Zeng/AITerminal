@@ -83,6 +83,14 @@ jobs:
         if: runner.os != 'Linux'
         run: npm run smoke:terminal
 
+      - name: Test documented file and command flows
+        if: runner.os != 'Linux'
+        run: npm run smoke:documented-flows
+
+      - name: Test documented file and command flows under Xvfb
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run smoke:documented-flows
+
       - name: Test real tmux panes, resize, and mouse interaction
         if: runner.os == 'Linux'
         run: |

@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 let activeTabId = 'tab-1';
 const aiStreamListeners = new Map();
@@ -73,6 +73,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     clipboardReadText: (tabId) => ipcRenderer.invoke('clipboard-read-text', { tabId: resolveTabId(tabId) }),
 
     // Special Commands and File Operations
+    getPathForFile: (file) => webUtils.getPathForFile(file),
     sshExecuteSpecial: (command, args, tabId) => ipcRenderer.invoke('ssh-execute-special', boundedText(command, 200), Array.isArray(args) ? args.slice(0, 100).map((arg) => boundedText(arg, 20000)) : [], resolveTabId(tabId)),
     sshExecuteSpecialStreaming: (command, args, tabId) => ipcRenderer.invoke('ssh-execute-special-streaming', boundedText(command, 200), Array.isArray(args) ? args.slice(0, 100).map((arg) => boundedText(arg, 20000)) : [], resolveTabId(tabId)),
     sshGetCurrentPath: (tabId) => ipcRenderer.invoke('ssh-get-current-path', resolveTabId(tabId)),

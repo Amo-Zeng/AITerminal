@@ -4,6 +4,14 @@ All notable changes to AITerminal will be documented here.
 
 ## Unreleased
 
+## 1.6.1 - 2026-11-09
+
+- Restored the macOS quarantine command, original support email/QQ group, community acknowledgments and legacy feature instructions in both READMEs. Added installation/troubleshooting, Chinese/English user guides and a documentation index; preserved all original demo topics through fixed historical links.
+- Fixed `send` and saved commands falling through to AI chat. Preserve shell quotes, spaces and pipelines and use the existing audited terminal IPC with per-tab ownership.
+- Fixed drag-and-drop file paths on current Electron using `webUtils.getPathForFile` in the preload bridge. Added real Electron checks for file resolution and shell command dispatch to the three-platform workflow.
+- Reviewed community PR #9's English Log Inspector example with WSL-aware paths, complete panel/JSON bounds, visible-text keyword counts, honest small-file limits and state/cancellation handling. Added actual host-process regressions; the example remains outside the bundled catalog.
+- Fixed explicit PowerShell plugin file reads decoding UTF-8 as ANSI and appending an extra newline, which broke log contents and line counts; native-shell regressions check Unicode, quoted paths and empty files.
+
 ## 1.6.0 - 2026-11-07
 
 - Publish verified Windows, Linux and macOS installers to GitHub Releases automatically after every successful trusted build. Stage uploads in a draft, verify all assets, and then update the latest download. Preserve published version tags and prevent older source builds from replacing newer downloads.
@@ -86,3 +94,21 @@ All notable changes to AITerminal will be documented here.
 - Strengthened packaged Linux and macOS startup checks to require a successfully spawned local PTY in addition to renderer readiness.
 - Updated Electron and the build dependency tree to audited versions; both runtime-only and full `npm audit` now report zero vulnerabilities.
 - Restored terminal `Ctrl+Shift+C` / `Ctrl+Shift+V` clipboard shortcuts through the main process, added Enter-to-copy-and-clear for selections, and kept delayed clipboard work bound to its originating tab.
+
+## 1.2.0 - 2025-07-12
+
+Historical release notes retained from the original README:
+
+- Added AI takeover for planned, iterative Bash development tasks.
+- Added settings pagination and multiple terminal tabs.
+
+## 1.1.0 - 2025-07-08
+
+- Fixed macOS clipboard handling, model selection/input, settings without SSH and dark-mode borders; added math rendering.
+- Accepted both an API base URL and a complete Chat Completions endpoint.
+- Added SSH key authentication, saved commands via `/`, full multi-turn history and custom answer requirements.
+- Added `send` for direct terminal commands.
+
+## 1.0.0 - 2025-07-03
+
+- Initial release with natural-language command generation, SSH connection management, drag-and-drop uploads, remote file browsing, terminal themes and Chinese-language interaction.

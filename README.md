@@ -2,7 +2,7 @@
 
 # AITerminal
 
-[English](README_en.md) · [下载](https://github.com/Amo-Zeng/AITerminal/releases) · [插件开发](PLUGIN_SDK.md) · [参与共建](CONTRIBUTING.md) · [讨论](https://github.com/Amo-Zeng/AITerminal/discussions)
+[English](README_en.md) · [下载](https://github.com/Amo-Zeng/AITerminal/releases/latest) · [安装排障](INSTALLATION.md) · [使用手册](USER_GUIDE.md) · [文档索引](DOCUMENTATION.md) · [插件开发](PLUGIN_SDK.md)
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 [![Cross-platform build](https://github.com/Amo-Zeng/AITerminal/actions/workflows/windows-build.yml/badge.svg)](https://github.com/Amo-Zeng/AITerminal/actions/workflows/windows-build.yml)
@@ -43,6 +43,9 @@ AITerminal 是基于 Electron、xterm.js 和 SSH2 的开源桌面终端，将本
 ## 能做什么
 
 - **本地与远程终端**：直接打开本地 Shell，或连接 SSH；支持 Codex、Vim、tmux 等交互式程序。
+- **AI 问答与命令助手**：自然语言问答、`fix` 错误诊断、`analyze` 系统分析、`cmd` 自然语言转命令；支持流式回复、分屏、Markdown、代码高亮、数学公式和自定义回答要求。
+- **SSH 文件与命令**：密码/私钥登录、拖拽上传、`rfe` 浏览和下载远程文件、`myls` 点击下载并打开文件；`send` 直接发送 Shell 命令，输入 `/` 调出常用命令。
+- **配置与外观**：保存/加载配置方案和会话配置、记住认证信息与自动登录、登录后自动命令；可调整主题、字体、光标和滚动历史行数。
 - **按标签隔离**：每个标签独立持有连接、AI 配置与历史、接管状态、输出、插件实例和终端尺寸。
 - **AI 运维**：对本地、远程或混合目标执行任务；高危命令执行前确认，可信任已核验指纹的指定 SSH 服务器以减少重复弹窗。
 - **终端交互**：`Ctrl+Shift+C/V` 复制粘贴；选中文本后 Enter 复制并取消选择；右键复制选中内容或粘贴。tmux/Vim 启用鼠标时接收鼠标和滚轮事件，`Shift+右键` 使用本地剪贴板。tmux 请启用 `set -g mouse on`。
@@ -52,9 +55,26 @@ AITerminal 是基于 Electron、xterm.js 和 SSH2 的开源桌面终端，将本
 
 AI 跟随当前标签的终端环境：Windows 默认本地终端是 **WSL Ubuntu**，AI 本地接管、交互式程序和插件也在同一 Ubuntu 发行版中运行，使用 Linux 路径。Linux / macOS 使用本地 Shell，SSH 标签使用远程环境。启动本地接管时从可见终端当前目录开始；终端关闭或重建后需重新启动接管。
 
+### 常用入口
+
+以下内容输入在窗口底部的命令/AI 输入框；终端区域中的输入直接交给 Shell。
+
+| 输入或操作 | 用途 |
+| --- | --- |
+| `如何查看 Linux 内存使用情况？` | AI 问答；也可用 `ai` / `ask` 前缀 |
+| `cmd 查找当前目录中大于 100 MB 的文件` | 生成命令，检查后再按需执行 |
+| `fix` / `analyze` | 诊断最近终端输出 / 分析当前系统 |
+| `send ls -lah` | 将命令发送到本标签的本地或 SSH 终端；无需模型 Key |
+| `/` | 搜索已配置的常用命令，选择后按 Enter 发送 |
+| `rfe /var/log` / `myls /var/log` | 浏览、下载或下载并打开 SSH 远端文件 |
+| `search 关键词` | 搜索本标签的 AI 接管历史索引 |
+| “AI 接管” / “🧩 插件” / “🔔 运行并通知” | 多步任务、插件工具与程序退出通知 |
+
+详细操作、快捷键和更多原版录屏见 [使用手册](USER_GUIDE.md)。
+
 ## 安装与开始使用
 
-从 [最新版本下载页](https://github.com/Amo-Zeng/AITerminal/releases/latest) 下载对应平台的 **AITerminal** 安装包，核对该版本附带的 `SHA256SUMS.txt`。**1.6.0** 包含 Responses / Messages API、AI 与终端环境统一，以及自动同步 Releases 的发布流程。
+从 [最新版本下载页](https://github.com/Amo-Zeng/AITerminal/releases/latest) 下载对应平台的 **AITerminal** 安装包，核对该版本附带的 `SHA256SUMS.txt`。**1.6.1** 修复 `send` 与拖拽上传，补齐安装和使用文档；同时包含 1.6.0 的 Responses / Messages API、AI 与终端环境统一，以及自动同步 Releases 的发布流程。
 
 | 平台 | 安装包 | 运行条件 |
 | --- | --- | --- |
@@ -64,11 +84,19 @@ AI 跟随当前标签的终端环境：Windows 默认本地终端是 **WSL Ubunt
 
 当前只提供桌面版本，没有 iOS `.ipa`。安装包不要求用户安装 Node.js。
 
+### macOS 提示“已损坏，无法打开”
+
+当前 macOS 安装包未签名、未公证，可能触发系统隔离提示。先从本项目 Releases 下载并核对 `SHA256SUMS.txt`，把应用拖入“应用程序”；若仍提示“已损坏”或无法验证开发者，在 macOS 自带“终端”执行：
+
+```bash
+sudo xattr -r -d com.apple.quarantine /Applications/AITerminal.app
+```
+
+然后重新打开应用。这个命令只移除指定应用的下载隔离属性，不能修复真正损坏的文件；校验和不一致时应重新下载。若安装位置不同，请修改路径。完整的 Windows WSL、Linux FUSE 和 macOS 排障步骤见 [安装指南](INSTALLATION.md)。
+
 启动后选择本地终端或配置 SSH；使用 AI 时填写自己的模型 API 地址、模型名与 Key。API 格式支持 **Chat Completions**（`/v1/chat/completions`）、**Responses**（`/v1/responses`）和 **Messages**（`/v1/messages`），可手动选择或根据完整 URL 自动识别，详见 [模型 API 配置](AI_PROVIDERS.md)。插件中心可从底部“🧩 插件”或 `Ctrl/Cmd+Shift+P` 打开。终端宠物和运维闯关无需模型 Key，也无需连接服务器。
 
 ## 一起建设插件生态
-
-欢迎在 [linux.do 社区](https://linux.do/)交流使用体验、AI 运维实践和插件创意，也欢迎通过本仓库的 Issues、Discussions 和 Pull Requests 参与共建。
 
 欢迎开发者贡献运维工具、交互式 CLI 助手、模型适配器、MCP 集成、教学插件、文档和测试。AITerminal 提供自己的插件中心与 SDK，内部借鉴 DeepSeek Harness 的组合方式并使用 Cordis 管理生命周期；已有 DSH/Cordis 插件需按服务接口适配，详见 [SDK](PLUGIN_SDK.md)。
 
@@ -121,11 +149,27 @@ npm run build:mac:unsigned
 
 ## 文档与安全边界
 
+- [文档索引](DOCUMENTATION.md) · [安装与排障](INSTALLATION.md) · [完整使用手册](USER_GUIDE.md) · [English user guide](USER_GUIDE_en.md)
 - [AI 接管](AI_TAKEOVER_MODE_README.md) · [插件使用](PLUGINS.md) · [插件 SDK](PLUGIN_SDK.md) · [通知设置](WEBHOOKS.md)
 - [贡献指南](CONTRIBUTING.md) · [路线图](ROADMAP.md) · [变更记录](CHANGELOG.md) · [开源检查记录](OPEN_SOURCE_AUDIT.md)
 - [安全政策](SECURITY.md) · [行为准则](CODE_OF_CONDUCT.md) · [第三方许可](THIRD_PARTY_NOTICES.md)
 
 AITerminal 以当前本地用户或 SSH 用户的权限运行。工作目录、命令审计和插件独立进程均不等于操作系统权限沙箱；仅启用可信插件。凭据无法安全加密时只在当前会话保留。漏洞请通过 [私密安全报告](https://github.com/Amo-Zeng/AITerminal/security/advisories/new) 提交，避免在公开 Issue 附上密钥或敏感终端输出。
+
+## 联系与反馈
+
+- **问题报告与功能建议**：[GitHub Issues](https://github.com/Amo-Zeng/AITerminal/issues)；交流与插件想法可在 [Discussions](https://github.com/Amo-Zeng/AITerminal/discussions) 发起。
+- **Email**：[1019191262@qq.com](mailto:1019191262@qq.com)
+- **QQ群**：1053768305
+
+报告问题时请附应用版本、操作系统与架构、本地/WSL/SSH 环境、复现步骤，以及脱敏后的报错或截图；安装失败请说明下载的文件名。安全漏洞按 [安全政策](SECURITY.md) 私下报告。
+
+## 致谢
+
+- 感谢 [linux.do 社区](https://linux.do/)佬友的交流、反馈和支持。
+- 感谢 [lorsque](https://github.com/lorsque-sir) 反馈 macOS 安装问题并提供上面的 `xattr` 处理方法。
+- 感谢 **Jasonvip** 分享将应用拖入 **Sentinel** 后成功打开的经验。此处保留原 README 中的社区反馈，具体工具版本与行为尚未复核；可优先使用上面的明确命令处理本应用。
+- 感谢 [painbaba](https://github.com/painbaba) 贡献英文插件示例，以及所有提交代码、插件、测试和问题反馈的贡献者。
 
 ## 许可证
 

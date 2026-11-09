@@ -2,7 +2,7 @@
 
 # AITerminal
 
-[中文](README.md) · [Downloads](https://github.com/Amo-Zeng/AITerminal/releases) · [Plugin quickstart](PLUGIN_QUICKSTART.md) · [Contributing](CONTRIBUTING.md) · [Discussions](https://github.com/Amo-Zeng/AITerminal/discussions)
+[中文](README.md) · [Downloads](https://github.com/Amo-Zeng/AITerminal/releases/latest) · [Installation](INSTALLATION.md#english) · [User guide](USER_GUIDE_en.md) · [Documentation](DOCUMENTATION.md) · [Plugin quickstart](PLUGIN_QUICKSTART.md)
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 [![Cross-platform build](https://github.com/Amo-Zeng/AITerminal/actions/workflows/windows-build.yml/badge.svg)](https://github.com/Amo-Zeng/AITerminal/actions/workflows/windows-build.yml)
@@ -43,6 +43,9 @@ These recordings from earlier versions show the application in use. The current 
 ## Features
 
 - Local and SSH terminals with real PTY support for Codex, Vim, tmux and other interactive tools.
+- AI chat, `fix` diagnostics, `analyze` system analysis and `cmd` natural-language commands; streaming replies, split views, Markdown, code highlighting, math rendering and custom answer requirements.
+- Password/key SSH login, drag-and-drop uploads, `rfe` remote browsing/downloads, and `myls` to download and open files. Use `send` for shell commands and `/` for saved commands.
+- Configuration profiles, session configuration import/export, remembered authentication, automatic login and startup commands; configurable themes, fonts, cursor and scrollback.
 - Independent connections, AI settings/history, execution state, output, plugins and terminal dimensions for every tab.
 - AI operations on local, remote or mixed targets; confirmation before recognized high-risk commands, with optional trust for a verified SSH server identity.
 - `Ctrl+Shift+C/V` clipboard shortcuts and Enter to copy and clear a selection. Right click copies a selection or pastes; tmux/Vim mouse tracking receives mouse/wheel input, with Shift+right click for the local clipboard. Enable tmux mouse mode with `set -g mouse on`.
@@ -52,9 +55,26 @@ These recordings from earlier versions show the application in use. The current 
 
 AI follows the current tab's terminal environment. On Windows, the local terminal, AI takeover, interactive programs and plugins all use the same **WSL Ubuntu** distribution and Linux paths. Linux/macOS use their local shell; SSH tabs use the remote environment. Local takeover starts in the visible terminal's current directory. Restart takeover after closing or replacing its terminal.
 
+### Everyday commands
+
+Enter these in the bottom command/AI input. Typing inside the terminal goes directly to its shell.
+
+| Input or action | Purpose |
+| --- | --- |
+| `How do I check Linux memory usage?` | AI chat; `ai` and `ask` prefixes also work |
+| `cmd find files larger than 100 MB in the current directory` | Generate a command for review before execution |
+| `fix` / `analyze` | Diagnose recent terminal output / analyze the current system |
+| `send ls -lah` | Send a command to this tab's local or SSH shell, without a model key |
+| `/` | Search saved commands, select one and press Enter to send |
+| `rfe /var/log` / `myls /var/log` | Browse/download SSH files or download and open them locally |
+| `search keyword` | Search this tab's AI takeover history index |
+| AI takeover / Plugin Center / Run and notify | Multi-step tasks, plugin tools and program-exit notifications |
+
+See the [user guide](USER_GUIDE_en.md) for detailed instructions, shortcuts and additional original recordings.
+
 ## Install
 
-Download an **AITerminal** package from the [latest release](https://github.com/Amo-Zeng/AITerminal/releases/latest) and verify `SHA256SUMS.txt`. **1.6.0** includes Responses / Messages APIs, a shared terminal environment for AI execution, and automatic synchronization of verified installers to Releases.
+Download an **AITerminal** package from the [latest release](https://github.com/Amo-Zeng/AITerminal/releases/latest) and verify `SHA256SUMS.txt`. **1.6.1** fixes `send` and drag-and-drop uploads and restores installation and usage documentation. It also includes 1.6.0's Responses / Messages APIs, shared terminal environment for AI execution and automatic Release publishing.
 
 | Platform | Package | Requirements |
 | --- | --- | --- |
@@ -63,6 +83,16 @@ Download an **AITerminal** package from the [latest release](https://github.com/
 | macOS Apple Silicon | `.dmg` | Current CI builds are arm64, unsigned and not notarized; verify the source before allowing launch through system settings |
 
 There is no iOS `.ipa` target. Packaged applications do not require Node.js.
+
+### macOS: “AITerminal is damaged and can't be opened”
+
+The current macOS package is unsigned and not notarized, which can trigger a quarantine warning. Download from this repository's Releases, verify `SHA256SUMS.txt`, then drag the app into Applications. If macOS still reports damage or an unverified developer, run this in the macOS Terminal:
+
+```bash
+sudo xattr -r -d com.apple.quarantine /Applications/AITerminal.app
+```
+
+Open the app again. This removes the quarantine attribute from this app only; it does not repair corrupted downloads. Re-download if the checksum differs, and adjust the path if installed elsewhere. See [installation and troubleshooting](INSTALLATION.md#english) for all three platforms.
 
 Open a local terminal or configure SSH. For AI features, supply your model API endpoint, model name and key. AI settings support **Chat Completions** (`/v1/chat/completions`), **Responses** (`/v1/responses`) and **Messages** (`/v1/messages`). Select a format or use a full endpoint for automatic detection; see [Model API configuration](AI_PROVIDERS.md). Open the Plugin Center from the bottom toolbar or `Ctrl/Cmd+Shift+P`. Terminal Pet and Ops Quest work without model credentials or a server connection.
 
@@ -79,8 +109,6 @@ Contribute operations tools, interactive CLI helpers, model adapters, MCP integr
 | [Git Time Machine](plugins/git-time-machine/index.js) | Read-only Git timelines and optional AI stories |
 
 Start with the [contribution guide](CONTRIBUTING.md), try the [plugin quickstart](PLUGIN_QUICKSTART.md), or open a [plugin proposal](https://github.com/Amo-Zeng/AITerminal/issues/new?template=plugin_proposal.yml). The [roadmap](ROADMAP.md) lists concrete collaboration opportunities. Small examples, translations and reproducible bug reports are welcome.
-
-Join the [linux.do community](https://linux.do/) to discuss AI operations, share experiences and exchange plugin ideas. Contributions through this repository's Issues, Discussions and Pull Requests are welcome.
 
 ## Run from source
 
@@ -121,9 +149,26 @@ See [Contributing](CONTRIBUTING.md) for focused smoke tests and [Releasing](RELE
 
 ## Documentation and security
 
+[Documentation index](DOCUMENTATION.md) · [Installation and troubleshooting](INSTALLATION.md#english) · [User guide](USER_GUIDE_en.md)
+
 [AI takeover](AI_TAKEOVER_MODE_README.md) · [Plugin usage](PLUGINS.md) · [SDK reference](PLUGIN_SDK.md) · [Notifications](WEBHOOKS.md) · [Roadmap](ROADMAP.md) · [Changelog](CHANGELOG.md) · [Open-source checks](OPEN_SOURCE_AUDIT.md)
 
 AITerminal executes with the current local or SSH user's permissions. A working directory, command audit or separate plugin process is not an operating-system sandbox. Enable trusted plugins only. Credentials remain session-only when secure storage is unavailable. Report vulnerabilities through [private security reporting](https://github.com/Amo-Zeng/AITerminal/security/advisories/new), following the [security policy](SECURITY.md); do not post keys or sensitive terminal output in public issues. Participants follow our [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Contact and support
+
+- [GitHub Issues](https://github.com/Amo-Zeng/AITerminal/issues) for bugs and feature requests; [Discussions](https://github.com/Amo-Zeng/AITerminal/discussions) for questions and plugin ideas.
+- **Email**: [1019191262@qq.com](mailto:1019191262@qq.com)
+- **QQ group**: 1053768305
+
+Include the app version, OS/architecture, local/WSL/SSH environment, reproduction steps and redacted errors or screenshots. For installation problems, include the downloaded filename. Report security issues privately following the [security policy](SECURITY.md).
+
+## Acknowledgments
+
+- The [linux.do community](https://linux.do/) for discussion, feedback and support.
+- [lorsque](https://github.com/lorsque-sir) for reporting the macOS installation issue and sharing the `xattr` workaround above.
+- **Jasonvip** for reporting that dragging the app into **Sentinel** resolved the launch problem. This preserves the original community report; its tool version and behavior have not been reverified. The explicit app-specific command above remains available.
+- [painbaba](https://github.com/painbaba) for English plugin examples, and everyone contributing code, plugins, tests and feedback.
 
 ## License
 
