@@ -53,6 +53,24 @@ jobs:
       - name: Test configuration modal and Webhook controls
         run: npm run smoke:config-modal
 
+      - name: Test AI protocol IPC through Electron
+        if: runner.os != 'Linux'
+        run: npm run smoke:ai-protocols
+
+      - name: Test AI protocol IPC through Electron under Xvfb
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run smoke:ai-protocols
+
+      # Hosted Windows runners do not provision an initialized Ubuntu distro.
+      # Windows -> WSL is covered by smoke:local-environment on a WSL-ready host.
+      - name: Test native terminal and AI execution environment
+        if: runner.os == 'macOS'
+        run: npm run smoke:local-environment
+
+      - name: Test native terminal and AI execution environment under Xvfb
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run smoke:local-environment
+
       - name: Test terminal clipboard shortcuts through Electron IPC
         if: runner.os != 'Linux'
         run: npm run smoke:clipboard
@@ -163,3 +181,37 @@ jobs:
             release/sbom.cdx.json
           if-no-files-found: error
           retention-days: 14
+
+  publish:
+    name: Publish verified installers
+    needs: build
+    if: github.repository == 'Amo-Zeng/AITerminal' && github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      actions: read
+    concurrency:
+      group: aiterminal-public-release
+      cancel-in-progress: false
+    steps:
+      - name: Checkout verified source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+
+      - name: Download this run's three platform artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: AITerminal-*-${{ github.sha }}
+          path: release/downloads
+
+      - name: Verify artifacts and synchronize Releases download page
+        run: node scripts/publishRelease.js
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

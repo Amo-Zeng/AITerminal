@@ -113,7 +113,7 @@ test('the takeover dispatcher resolves and audits plugin commands before the loc
     const end = source.indexOf('\n// 初始化应用', begin);
     // This is the last function before application boot; compile only its declaration.
     const body = source.slice(begin, end === -1 ? source.indexOf('\napp.whenReady()', begin) : end);
-    const tab = Object.assign(fixture.tab, { aiTakeoverTarget: 'local', localTakeoverInitialDir: '/tmp', aiTakeoverHistory: [] });
+    const tab = Object.assign(fixture.tab, { aiTakeoverTarget: 'local', localTakeoverInitialDir: '/tmp', localTakeoverBinding: { environment: { shell: 'posix' }, valid: () => true }, aiTakeoverHistory: [] });
     const auditSubjects = [], dispatched = [];
     const window = { webContents: { send() {} } };
     const context = vm.createContext({

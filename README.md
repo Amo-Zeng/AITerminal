@@ -11,6 +11,35 @@
 
 AITerminal 是基于 Electron、xterm.js 和 SSH2 的开源桌面终端，将本地 PTY、SSH、AI 对话、交互式命令接管和插件中心放在同一工作界面。源码使用 **Apache License 2.0**，支持 Windows、Linux 和 macOS。
 
+## 功能演示
+
+保留以下早期版本录屏，展示实际操作方式。当前版本的界面布局、标签隔离和权限确认流程已有升级，以当前应用与文档为准。
+
+**自然语言转命令**：描述“查找所有大于 100 MB 的文件”，查看 AI 给出的命令，再按需执行。
+
+![自然语言转命令：输入需求、查看命令建议并执行](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/ai-cmd.gif)
+
+<details>
+<summary>展开更多演示：AI 接管、AI 问答、文件拖拽与主题切换</summary>
+
+**AI 接管任务（2 倍速）**：输入“创建一个介绍广义相对论的炫酷网页”，由 AI 执行开发任务，并继续提出修改要求。
+
+![AI 接管：根据自然语言需求创建网页并追加修改，2 倍速录屏](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/agent_2x.gif)
+
+**AI 问答与建议**：询问如何查看 Linux 内存使用情况，获取解释和命令示例。
+
+![AI 问答：查询 Linux 内存使用方法并查看回复](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/ai-chat.gif)
+
+**文件拖拽与传输**：将本地文件拖入已连接的 SSH 终端，上传后浏览和下载远程文件。
+
+![文件传输：拖拽上传本地文件并浏览、下载远程文件](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/drag-upload.gif)
+
+**终端主题切换**：调整字体和配色，选择适合自己的终端外观。
+
+![终端外观：在配置中切换配色主题](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/terminal-themes.gif)
+
+</details>
+
 ## 能做什么
 
 - **本地与远程终端**：直接打开本地 Shell，或连接 SSH；支持 Codex、Vim、tmux 等交互式程序。
@@ -21,11 +50,11 @@ AITerminal 是基于 Electron、xterm.js 和 SSH2 的开源桌面终端，将本
 - **插件中心**：参数化工具、模型适配器、标准 MCP、任务事件、面板、配置、插件源和版本恢复；提供独立进程、Cordis 生命周期和开发 SDK。
 - **凭据与连接保护**：SSH 首次连接确认 SHA-256 主机指纹，密钥变化默认阻断；SSH 凭据、模型 Key 和 Webhook URL 由系统加密存储管理。
 
-Windows 的可见本地终端默认是 **WSL Ubuntu**（`wsl.exe -d Ubuntu --cd ~`）；Windows 的 **AI 本地接管**使用宿主 PowerShell 操作 Windows 工作目录。两者是不同环境。
+AI 跟随当前标签的终端环境：Windows 默认本地终端是 **WSL Ubuntu**，AI 本地接管、交互式程序和插件也在同一 Ubuntu 发行版中运行，使用 Linux 路径。Linux / macOS 使用本地 Shell，SSH 标签使用远程环境。启动本地接管时从可见终端当前目录开始；终端关闭或重建后需重新启动接管。
 
 ## 安装与开始使用
 
-从 [GitHub Releases](https://github.com/Amo-Zeng/AITerminal/releases) 下载对应平台的 **AITerminal** 安装包，核对该版本附带的 `SHA256SUMS`。1.5.1 对应本次开源及 Plugin API 1.1；旧版安装包不包含最新插件和程序通知。
+从 [最新版本下载页](https://github.com/Amo-Zeng/AITerminal/releases/latest) 下载对应平台的 **AITerminal** 安装包，核对该版本附带的 `SHA256SUMS.txt`。**1.6.0** 包含 Responses / Messages API、AI 与终端环境统一，以及自动同步 Releases 的发布流程。
 
 | 平台 | 安装包 | 运行条件 |
 | --- | --- | --- |
@@ -35,9 +64,11 @@ Windows 的可见本地终端默认是 **WSL Ubuntu**（`wsl.exe -d Ubuntu --cd 
 
 当前只提供桌面版本，没有 iOS `.ipa`。安装包不要求用户安装 Node.js。
 
-启动后选择本地终端或配置 SSH；使用 AI 时填写自己的兼容模型 API 地址、模型名与 Key。插件中心可从底部“🧩 插件”或 `Ctrl/Cmd+Shift+P` 打开。终端宠物和运维闯关无需模型 Key，也无需连接服务器。
+启动后选择本地终端或配置 SSH；使用 AI 时填写自己的模型 API 地址、模型名与 Key。API 格式支持 **Chat Completions**（`/v1/chat/completions`）、**Responses**（`/v1/responses`）和 **Messages**（`/v1/messages`），可手动选择或根据完整 URL 自动识别，详见 [模型 API 配置](AI_PROVIDERS.md)。插件中心可从底部“🧩 插件”或 `Ctrl/Cmd+Shift+P` 打开。终端宠物和运维闯关无需模型 Key，也无需连接服务器。
 
 ## 一起建设插件生态
+
+欢迎在 [linux.do 社区](https://linux.do/)交流使用体验、AI 运维实践和插件创意，也欢迎通过本仓库的 Issues、Discussions 和 Pull Requests 参与共建。
 
 欢迎开发者贡献运维工具、交互式 CLI 助手、模型适配器、MCP 集成、教学插件、文档和测试。AITerminal 提供自己的插件中心与 SDK，内部借鉴 DeepSeek Harness 的组合方式并使用 Cordis 管理生命周期；已有 DSH/Cordis 插件需按服务接口适配，详见 [SDK](PLUGIN_SDK.md)。
 
@@ -84,7 +115,7 @@ npm run build:linux
 npm run build:mac:unsigned
 ```
 
-公开 [GitHub Actions](https://github.com/Amo-Zeng/AITerminal/actions/workflows/windows-build.yml) 在 PR、普通 `push` 到 `main` / `release/**`、`v*` 标签和手动触发时运行三平台构建。Fork 开发者可以在自己的仓库启用 Actions；构建无需维护者私有仓库或模型 Key。每个平台执行锁定安装、测试、依赖审计、真实 Electron/插件/通知检查、打包源码一致性及打包后启动，再上传安装包、校验和与 SBOM。Actions 临时产物保留 14 天，正式下载使用 Releases。
+公开 [GitHub Actions](https://github.com/Amo-Zeng/AITerminal/actions/workflows/windows-build.yml) 在 PR、普通 `push` 到 `main` / `release/**`、`v*` 标签和手动触发时运行三平台构建。Fork 开发者可以在自己的仓库启用 Actions；构建无需维护者私有仓库或模型 Key。每个平台执行锁定安装、测试、依赖审计、真实 Electron/插件/通知检查、打包源码一致性及打包后启动，再上传安装包、校验和与 SBOM。主仓库的非 PR 构建在三平台全部通过后自动同步 Releases；附件上传校验齐全后才更新下载页。Actions 临时产物保留 14 天，正式下载使用 Releases。
 
 按改动范围运行真实交互测试，命令与环境要求见 [贡献指南](CONTRIBUTING.md)。维护者原有私有打包脚本仍保留，使用说明移至 [构建与发布](RELEASING.md)。
 

@@ -7,6 +7,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { runElectronSmoke } = require('./clipboardSmoke');
 async function main() {
+    const withoutTerminal = process.platform === 'win32' || process.argv.includes('--without-terminal');
     const requests = [];
     const server = http.createServer((req, res) => {
         let data = ''; req.on('data', chunk => { data += chunk; });
@@ -31,16 +32,31 @@ async function main() {
             await evaluate('createNewTerminalTab()');
             await check("electronAPI.pluginsEnable('aiterminal.docker-tools',true,'tab-2')");
             await check("electronAPI.pluginsConfig('aiterminal.docker-tools','tab',{label:'SECOND',context:'',tail:200},'tab-2')");
+            if (withoutTerminal) {
+                // Hosted Windows has no initialized Ubuntu. Verify the actual
+                // disconnected contract explicitly instead of accidentally
+                // treating two missing backends as the same valid terminal.
+                await evaluate(`(async () => {
+                    for (const tab of ['tab-1', 'tab-2']) {
+                        terminalTabs.get(tab).sshConnecting = true;
+                        stopLocalTerminalForTab(tab);
+                        await electronAPI.terminalLocalStop(tab);
+                    }
+                })()`);
+            }
             for (const [tab, label] of [['tab-1', 'FIRST'], ['tab-2', 'SECOND']]) {
                 const start = await check(`electronAPI.pluginsTool('aiterminal.docker-tools','environment',{},'${tab}')`);
                 const task = await wait(`electronAPI.pluginsList('${tab}').then(r=>r.plugins.find(p=>p.id==='aiterminal.docker-tools').runtimeState.tasks.find(t=>t.id==='${start.taskId}'&&t.state!=='running'))`);
-                assert.equal(task.state, 'completed', task.error); assert.equal(task.result.label, label); assert.equal(task.result.tabId, tab);
+                if (withoutTerminal) {
+                    assert.equal(task.state, 'error'); assert.match(task.error, /失效|关闭|变化/);
+                } else {
+                    assert.equal(task.state, 'completed', task.error); assert.equal(task.result.label, label); assert.equal(task.result.tabId, tab);
+                }
             }
             await evaluate("switchToTab('tab-1'); document.getElementById('openPluginCenter').click()");
             await wait("document.querySelector('[data-plugin-action=select][data-id=\"aiterminal.docker-tools\"]') !== null");
             await evaluate("document.querySelector('[data-plugin-action=select][data-id=\"aiterminal.docker-tools\"]').click()");
-            await wait("document.getElementById('pluginDetail').textContent.includes('FIRST')");
-            assert.equal(await evaluate("!!document.querySelector('[data-form-key=\"config:aiterminal.docker-tools\"] [data-field=label]')"), true);
+            await wait("document.querySelector('[data-form-key=\"config:aiterminal.docker-tools\"] [data-field=label]')?.value === 'FIRST'");
             await evaluate("document.getElementById('closePluginCenter').click()");
             await install('aiterminal.model-policy');
             await check("electronAPI.pluginsEnable('aiterminal.model-policy',true,'tab-1')");
@@ -91,7 +107,7 @@ async function main() {
             await screenshot('ops-quest', 'quest');
             // Windows UI targets WSL Ubuntu, which is not installed on hosted CI.
             // The Node suite exercises real Git via host PowerShell on Windows.
-            if (process.platform !== 'win32') {
+            if (!withoutTerminal) {
                 const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'ait-git-ui-'));
                 try {
                     for (const args of [['init', '--initial-branch=main'], ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', '-c', 'commit.gpgsign=false', '-c', `core.hooksPath=${path.join(repo, 'no-hooks')}`, 'commit', '--allow-empty', '-m', 'feat: 插件时间线']]) {
@@ -113,7 +129,7 @@ async function main() {
             await wait("document.getElementById('pluginDetail').textContent.includes('PET <b>first</b>')");
             assert.equal(await evaluate("document.querySelector('#pluginDetail b') === null"), true);
             await screenshot('terminal-pet', 'pet');
-            console.log('Plugin runtime smoke ok: Electron + Cordis, tab isolation, model adapter, pet events, quest UI, Git timeline/story (POSIX), teardown');
+            console.log(`Plugin runtime smoke ok: Electron + Cordis, tab isolation, model adapter, pet events, quest UI, ${withoutTerminal ? 'closed-backend rejection and offline operation' : 'live terminal context and Git timeline/story'}, teardown`);
         });
     } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
 }

@@ -176,6 +176,7 @@ const electronApiBootstrap = `(() => {
         onSshDisconnected: () => {},
         onAiTakeoverUpdate: () => {},
         aiConfigure: asyncSuccess,
+        aiTestConnection: async (config) => { window.__testedAiConfig = config; return { success: true, response: '✅ fixture' }; },
         secureMigrateConfigs: async () => ({ success: true, persisted: true }),
         clipboardWriteText: async (text, tabId) => {
             window.__clipboardWrites = window.__clipboardWrites || [];
@@ -265,6 +266,7 @@ const modalSmokeExpression = `(async () => {
     document.getElementById('sshPort').value = '2222';
     document.getElementById('sshUsername').value = 'operator';
     document.getElementById('aiTemperature').value = '0';
+    document.getElementById('aiApiFormat').value = 'messages';
     document.getElementById('trustServer').checked = true;
     document.getElementById('trustServer').dispatchEvent(new Event('change', { bubbles: true }));
     showCustomPrompt = (_title, _message, _defaultValue, callback) => callback('trusted-server');
@@ -273,11 +275,14 @@ const modalSmokeExpression = `(async () => {
     const profile = JSON.parse(localStorage.getItem('configProfiles') || '{}')['trusted-server'];
 
     document.getElementById('trustServer').checked = false;
+    document.getElementById('aiApiFormat').value = 'auto';
     showCustomConfirm = (_title, _message, callback) => callback(true);
     document.getElementById('configProfileSelect').value = 'trusted-server';
     loadConfigProfile();
     const trustRestored = document.getElementById('trustServer').checked === true;
     const zeroTemperatureRestored = document.getElementById('aiTemperature').value === '0';
+    const apiFormatRestored = document.getElementById('aiApiFormat').value === 'messages';
+    await testAIConnection();
 
     document.getElementById('sshHost').value = 'changed.example.test';
     document.getElementById('sshHost').dispatchEvent(new Event('input', { bubbles: true }));
@@ -293,6 +298,9 @@ const modalSmokeExpression = `(async () => {
         trustSaved: profile?.trustServer === true,
         trustRestored,
         zeroTemperatureRestored,
+        apiFormatSaved: profile?.aiApiFormat === 'messages',
+        apiFormatRestored,
+        apiFormatTested: window.__testedAiConfig?.aiApiFormat === 'messages',
         trustRevokedAfterIdentityChange: document.getElementById('trustServer').checked === false
     };
 })()`;

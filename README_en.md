@@ -11,6 +11,35 @@
 
 AITerminal is an open-source desktop terminal built with Electron, xterm.js and SSH2. It combines local PTYs, SSH, AI conversations, interactive command execution and a Plugin Center. The source is licensed under **Apache License 2.0** and runs on Windows, Linux and macOS.
 
+## Demos
+
+These recordings from earlier versions show the application in use. The current UI, tab isolation and command confirmation flow have since been updated; follow the current application and documentation for exact behavior.
+
+**Natural language to commands**: ask to find files larger than 100 MB, review the suggested command and execute it when needed.
+
+![Natural language to commands: enter a request, review the suggestion and execute it](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/ai-cmd.gif)
+
+<details>
+<summary>More demos: AI takeover, AI chat, file transfers and terminal themes</summary>
+
+**AI takeover (2× speed)**: ask the AI to build a webpage about general relativity, let it carry out the development task and request further changes.
+
+![AI takeover: create and refine a webpage from a natural-language request, at 2× speed](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/agent_2x.gif)
+
+**AI chat and suggestions**: ask how to check Linux memory usage and receive explanations with command examples.
+
+![AI chat: ask about Linux memory usage and read the response](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/ai-chat.gif)
+
+**Drag-and-drop file transfers**: drag a local file into a connected SSH terminal, then browse and download remote files.
+
+![File transfers: upload by dragging, then browse and download remote files](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/drag-upload.gif)
+
+**Terminal themes**: adjust fonts and colors to suit your preferred terminal appearance.
+
+![Terminal appearance: switch color themes in the configuration dialog](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/terminal-themes.gif)
+
+</details>
+
 ## Features
 
 - Local and SSH terminals with real PTY support for Codex, Vim, tmux and other interactive tools.
@@ -21,11 +50,11 @@ AITerminal is an open-source desktop terminal built with Electron, xterm.js and 
 - A Plugin Center with parameterized tools, model adapters, standard MCP, task events, panels, configuration, catalogs and version recovery. Code plugins use dedicated processes and a Cordis lifecycle.
 - SSH host fingerprint verification and platform-encrypted storage for SSH credentials, model API keys and Webhook URLs.
 
-The visible local terminal on Windows defaults to **WSL Ubuntu** (`wsl.exe -d Ubuntu --cd ~`). **Local AI takeover** on Windows uses the host PowerShell environment to operate on Windows working directories. These are separate environments.
+AI follows the current tab's terminal environment. On Windows, the local terminal, AI takeover, interactive programs and plugins all use the same **WSL Ubuntu** distribution and Linux paths. Linux/macOS use their local shell; SSH tabs use the remote environment. Local takeover starts in the visible terminal's current directory. Restart takeover after closing or replacing its terminal.
 
 ## Install
 
-Download an **AITerminal** package from [GitHub Releases](https://github.com/Amo-Zeng/AITerminal/releases) and verify the accompanying SHA-256 checksums. Version 1.5.1 contains this open-source update and Plugin API 1.1; older installers do not contain the latest plugins and program notifications.
+Download an **AITerminal** package from the [latest release](https://github.com/Amo-Zeng/AITerminal/releases/latest) and verify `SHA256SUMS.txt`. **1.6.0** includes Responses / Messages APIs, a shared terminal environment for AI execution, and automatic synchronization of verified installers to Releases.
 
 | Platform | Package | Requirements |
 | --- | --- | --- |
@@ -35,7 +64,7 @@ Download an **AITerminal** package from [GitHub Releases](https://github.com/Amo
 
 There is no iOS `.ipa` target. Packaged applications do not require Node.js.
 
-Open a local terminal or configure SSH. For AI features, supply your compatible model API endpoint, model name and key. Open the Plugin Center from the bottom toolbar or `Ctrl/Cmd+Shift+P`. Terminal Pet and Ops Quest work without model credentials or a server connection.
+Open a local terminal or configure SSH. For AI features, supply your model API endpoint, model name and key. AI settings support **Chat Completions** (`/v1/chat/completions`), **Responses** (`/v1/responses`) and **Messages** (`/v1/messages`). Select a format or use a full endpoint for automatic detection; see [Model API configuration](AI_PROVIDERS.md). Open the Plugin Center from the bottom toolbar or `Ctrl/Cmd+Shift+P`. Terminal Pet and Ops Quest work without model credentials or a server connection.
 
 ## Build the plugin ecosystem with us
 
@@ -50,6 +79,8 @@ Contribute operations tools, interactive CLI helpers, model adapters, MCP integr
 | [Git Time Machine](plugins/git-time-machine/index.js) | Read-only Git timelines and optional AI stories |
 
 Start with the [contribution guide](CONTRIBUTING.md), try the [plugin quickstart](PLUGIN_QUICKSTART.md), or open a [plugin proposal](https://github.com/Amo-Zeng/AITerminal/issues/new?template=plugin_proposal.yml). The [roadmap](ROADMAP.md) lists concrete collaboration opportunities. Small examples, translations and reproducible bug reports are welcome.
+
+Join the [linux.do community](https://linux.do/) to discuss AI operations, share experiences and exchange plugin ideas. Contributions through this repository's Issues, Discussions and Pull Requests are welcome.
 
 ## Run from source
 
@@ -84,7 +115,7 @@ npm run build:linux
 npm run build:mac:unsigned
 ```
 
-The public [Actions workflow](https://github.com/Amo-Zeng/AITerminal/actions/workflows/windows-build.yml) builds all three platforms for pull requests, pushes to `main` / `release/**`, `v*` tags and manual runs. Fork owners can enable Actions in their repositories; no private build repository or model key is required. Checks include locked dependencies, tests, audits, real Electron/plugin/notification smoke tests, source-to-package verification and actual packaged startup. Artifacts include installers, checksums and an SBOM and expire after 14 days; use Releases for durable downloads.
+The public [Actions workflow](https://github.com/Amo-Zeng/AITerminal/actions/workflows/windows-build.yml) builds all three platforms for pull requests, pushes to `main` / `release/**`, `v*` tags and manual runs. Fork owners can enable Actions in their repositories; no private build repository or model key is required. Checks include locked dependencies, tests, audits, real Electron/plugin/notification smoke tests, source-to-package verification and actual packaged startup. Successful non-PR builds in the main repository automatically publish installers, checksums and platform SBOMs to Releases after verifying every upload. Actions artifacts expire after 14 days; use Releases for durable downloads.
 
 See [Contributing](CONTRIBUTING.md) for focused smoke tests and [Releasing](RELEASING.md) for the optional maintainer build helper.
 

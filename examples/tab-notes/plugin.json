@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 2,
+  "id": "example.tab-notes",
+  "name": "Tab Notes",
+  "version": "1.0.0",
+  "description": "Offline English example for Plugin API 1.1: per-tab session state with revision-conflict retry. No terminal connection, model or server needed.",
+  "author": "AITerminal community",
+  "license": "Apache-2.0",
+  "runtime": "node",
+  "entry": "index.js",
+  "engines": { "aiterminal": ">=1.5.1", "pluginApi": "^1.1.0" },
+  "permissions": [],
+  "tags": ["Example", "State", "Offline"],
+  "instructions": "Use when the user wants to try or inspect per-tab session state: add, show or clear notes in the current tab. Offline demo only; state is per tab and cleared on disable, update, tab close or app exit.",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "keepLast": { "type": "integer", "title": "Notes kept per tab", "default": 10, "minimum": 1, "maximum": 25 }
+    }
+  },
+  "panels": [{ "id": "notes", "title": "Tab Notes" }],
+  "tools": [
+    { "id": "add", "title": "Add a note", "description": "Append one note to this tab's session state, retrying on revision conflict.", "inputSchema": {
+      "type": "object",
+      "properties": { "text": { "type": "string", "title": "Note text", "minLength": 1, "maxLength": 200 } },
+      "required": ["text"]
+    } },
+    { "id": "show", "title": "Show this tab's notes", "description": "Publish the notes stored for the current tab to the notes panel." },
+    { "id": "clear", "title": "Clear this tab's notes", "description": "Empty this tab's list after an explicit confirm.", "inputSchema": {
+      "type": "object",
+      "properties": { "confirm": { "type": "boolean", "title": "Really clear this tab's notes", "default": false } }
+    } }
+  ]
+}

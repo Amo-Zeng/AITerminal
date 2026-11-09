@@ -33,7 +33,8 @@ The template declares the `hello` tool, its input schema, the `greeting` panel a
 
 | Goal | Example |
 | --- | --- |
-| Read-only file inspection with bounded output and diagnostics (offline, English guide) | [Log Inspector](examples/log-inspector/) |
+| Read-only small-file inspection with bounded output and diagnostics (English guide) | [Log Inspector](examples/log-inspector/) |
+| Session state with revision-conflict retry, per tab (offline, English guide) | [Tab Notes](examples/tab-notes/) |
 | Offline panels, events and per-tab session state | [Terminal Pet](plugins/terminal-pet/) and [Ops Quest](plugins/ops-quest/) |
 | Validated parameters and interactive terminal sessions | [Docker Workbench](plugins/docker-tools/) |
 | Task events and host-managed Webhook delivery | [Task Notifier](plugins/task-notifier/) |

@@ -54,6 +54,8 @@ npm run plugin:dev -- pack ../hello-aiterminal ../example.hello.aitplugin.json
 | 改动 | 推荐检查 |
 | --- | --- |
 | 清单、包、插件 SDK / 生命周期 | `npm test`、`npm run smoke:plugins`、`npm run smoke:plugin-runtime` |
+| 模型 API 协议、格式与工具调用 | `npm test`、`npm run smoke:ai-protocols`、`npm run smoke:config-modal` |
+| 本地 AI / 插件执行环境和目录 | `npm run smoke:local-environment`；Windows 需已初始化的 WSL Ubuntu |
 | Webhook、退出与输出匹配 | `npm run smoke:notifications`、`npm run smoke:config-modal` |
 | 终端、剪贴板、尺寸和鼠标 | `npm run smoke:clipboard`、`npm run smoke:terminal`；Unix 安装 tmux 后运行 `npm run smoke:tmux` |
 | Markdown、IPC、凭据与配置 | 相关单测、`npm run smoke:renderer-security`、`npm run smoke:config-modal` |

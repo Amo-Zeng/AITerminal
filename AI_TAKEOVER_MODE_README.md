@@ -5,22 +5,26 @@ AI 接管模式允许模型根据用户任务规划并执行本地或远程命�
 ## 执行目标
 
 - `remote:` / `远程:`：只操作当前标签的 SSH 会话。
-- `local:` / `本地:`：只操作本机。Windows 上 AI 本地接管使用宿主 PowerShell，以便直接操作用户选择的 Windows 目录。
+- `local:` / `本地:`：操作当前标签的本地终端环境。Windows 默认使用 WSL Ubuntu，与可见终端使用相同的发行版和 Shell；需要操作 Windows 文件时使用 `/mnt/c/...` 等 Ubuntu 路径。
 - `hybrid:` / `混合:`：同时允许本地和当前标签的 SSH 会话，默认优先远程，模型需明确指定本地动作。
 
-没有前缀时，已连接 SSH 的标签默认使用远程目标，否则使用本地目标。启动本地或混合接管时，应用会要求选择初始工作目录并显示权限确认。
+没有前缀时，已连接 SSH 的标签默认使用远程目标，否则使用本地目标。启动本地接管时读取可见终端进程的当前目录并显示目标环境确认；不会弹出 Windows 目录选择器去选择 Linux 目录。混合模式的本地侧使用该标签连接 SSH 前的本地环境；该环境必须已成功启动，目录采用最后跟踪的路径。
 
-用户选择的目录只是初始工作目录，不是沙箱。AI 以当前本地用户或 SSH 用户的完整权限运行，能够访问该用户有权访问的其他路径和系统资源。
+初始工作目录不是沙箱。AI 以终端用户的完整权限运行，能够访问该用户有权访问的其他路径和系统资源。
 
 ## 本地终端
 
-每个标签都有独立的 xterm.js 和后端 PTY。Windows 的可见本地终端默认启动：
+每个标签都有独立的 xterm.js 和后端 PTY。Windows 的默认环境相当于：
 
 ```text
 wsl.exe -d Ubuntu --cd ~
 ```
 
-可通过 `AIT_TERMINAL_WSL_DISTRO` 指定其他 WSL 发行版。这里的 WSL 终端与 AI 本地接管的 Windows 宿主 PowerShell 是两个明确不同的执行环境。
+可通过 `AIT_TERMINAL_WSL_DISTRO` 指定其他 WSL 发行版，`AIT_TERMINAL_SHELL` 在 Windows 上指定 `wsl.exe` 的位置。应用通过启动标记记录 WSL Shell 和进程，在 Linux/WSL 中读取 `/proc/<pid>/cwd`，macOS 使用 `lsof` 查询目录；不会把查询命令输入正在运行的 Codex、tmux 等程序。无法确认目标时停止，不回退宿主 PowerShell。
+
+AI 普通命令与插件使用独立进程，交互程序使用独立 PTY；它们共享终端的系统、发行版、用户和 Shell 配置，不共享可见 Shell 的临时变量、别名或正在运行的 tmux pane。接管启动后，AI 自己的 `cd` 更新接管目录。若在 tmux 内需要指定另一目录，请提供该目录的绝对路径。标签终端被关闭、重启或切换后，旧请求与执行目标失效。
+
+模型配置支持 Chat Completions、Responses、Messages 三种 API；认证、流式输出和工具结果回传说明见 [AI_PROVIDERS.md](AI_PROVIDERS.md)。
 
 `node-pty` 是核心运行依赖。若目标平台的原生模块没有正确安装或打包，本地终端和本地交互会话会直接拒绝启动，不会退化成不可靠的非 TTY 管道。
 
@@ -70,6 +74,7 @@ wsl.exe -d Ubuntu --cd ~
 npm ci
 npm test
 npm run doctor
+npm run smoke:local-environment
 ```
 
 Windows 安装包必须在干净的 Windows runner 构建，并执行 `npm run verify:win-package`。该检查会验证 `main.js`、Apache-2.0 元数据、WSL Ubuntu 默认参数和 Windows x64 `node-pty` 原生文件。
