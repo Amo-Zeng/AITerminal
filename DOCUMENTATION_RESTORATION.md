@@ -43,6 +43,9 @@
 - `npm run smoke:documented-flows`：在 WSL Linux 的真实 Electron 中通过，验证真实 File 的 preload 桥接，以及常用命令 → `send` → 命令审计 → PTY 的引号、管道和带空格路径。
 - 新 Electron 检查纳入三平台 CI；Windows runner 不含已初始化的 Ubuntu，仅执行文件桥接检查，Shell 发送由 Linux/macOS CI 验证。
 - 原版可用的 7 组演示链接均返回 HTTP 200；中英文 README 各保留原有 5 组，SSH 连接和 AI 流式演示放入使用手册。
-- 主工作区 `npm test`：174 项，173 通过、1 项按平台跳过、0 失败；日志巡检与文件服务新增测试另行验证，最终三平台检查覆盖合并后的完整集合。
+- 合并后的 `npm test`：179 项，178 通过、1 项按平台跳过、0 失败。
+- 11 份相关文档的 176 个本地链接存在，Markdown 可渲染；凭据扫描、版本一致性、三平台工作流 YAML 和 `git diff --check` 通过。
+- 自动生成的 Release 说明直接附上 macOS `xattr` 命令和该构建对应的安装指南，下载页也能找到处理步骤。
+- macOS 隔离提示的处理方法按原版社区反馈恢复，本机 Linux 未重现 macOS 下载后隔离弹框；CI 验证对应平台的构建与打包后启动。
 
 完整测试、链接检查、PR 合并和正式发布结果在完成后补记于此。
