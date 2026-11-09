@@ -50,6 +50,18 @@
 
 ### 当前发布状态
 
-维护者已更新本机 GitHub 权限；本轮在保留本地新增源码的前提下正常推送 `main`，不拉取覆盖或强制回退。安装包以三平台工作流、发布任务和匿名下载核验结果为准；最终来源提交、工作流与附件检查将在发布成功后补入此处。凭据不进入源码、文档或构建参数。
+**1.7.0 已发布**：[下载页](https://github.com/Amo-Zeng/AITerminal/releases/tag/v1.7.0)，[三平台构建与自动发布](https://github.com/Amo-Zeng/AITerminal/actions/runs/42627831229)全部成功。安装包源码为 [`9bb5a9215640a0a402618271e3e7028ffdbf5cdc`](https://github.com/Amo-Zeng/AITerminal/commit/9bb5a9215640a0a402618271e3e7028ffdbf5cdc)；Windows、Linux、macOS 均通过打包源码一致性及打包后启动检查。
+
+本机 Git HTTPS 连接超时后，通过 GitHub Git 数据接口上传相同对象并非强制快进 `main`；逐一核对 blob、tree 和 commit 哈希，保留全部三个本地提交，没有拉取旧源码覆盖或改写历史。凭据仅从环境读取，不进入源码、文档或命令参数。
+
+2026-11-09 匿名发布核验通过：`releases/latest` 实际重定向至 `v1.7.0`；8 个附件全部上传完成；下载 `SHA256SUMS.txt` 与 `release-provenance.json` 核对摘要、标签、源码及工作流来源；三份安装包经公开资产端点跳转至 `release-assets.githubusercontent.com`，HEAD 均返回 HTTP 200，长度与发布元数据一致。此处不把 HEAD 检查当作完整下载安装测试；完整文件摘要由构建/发布流程及 GitHub 附件摘要交叉核对。发布说明保留 macOS `xattr` 命令与安装指南。
+
+| 平台 | 公开安装包 | 大小（字节） |
+| --- | --- | --- |
+| Windows x64 | `AITerminal-1.7.0-x64-Setup.exe` | 122,511,632 |
+| Linux x64 | `AITerminal-1.7.0.AppImage` | 136,044,573 |
+| macOS arm64 | `AITerminal-1.7.0-arm64.dmg` | 129,984,430 |
+
+发布后的本文补录属于文档更新，不重打包已经验证的同一份源码。
 
 长时间输出背压、主机分组、批量执行、跨会话 AI 编排和对外 MCP 服务端仍列入 [路线图](ROADMAP.md)。
