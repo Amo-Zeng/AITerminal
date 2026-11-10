@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { spawn, spawnSync } = require('child_process');
 
@@ -76,8 +77,9 @@ async function main() {
         : findPackagedExecutable(releaseDirectory);
     if (!existsFile(executable)) throw new Error(`packaged executable is missing: ${executable}`);
 
+    const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'aiterminal-package-startup-'));
     let command = executable;
-    let args = process.platform === 'linux' && process.env.CI ? ['--no-sandbox'] : [];
+    let args = [`--user-data-dir=${profile}`, ...(process.platform === 'linux' && process.env.CI ? ['--no-sandbox'] : [])];
     if (process.platform === 'linux' && !process.env.DISPLAY) {
         command = 'xvfb-run';
         args = ['-a', executable, ...args];
@@ -120,6 +122,7 @@ async function main() {
         throw new Error(diagnostics);
     } finally {
         await terminateProcessTree(child);
+        await fs.promises.rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
     }
 }
 

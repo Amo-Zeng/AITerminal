@@ -19,7 +19,7 @@
 
 | 检查 | 验收范围 |
 | --- | --- |
-| `npm test` | 193 项：192 通过、1 项平台跳过；原有隔离、接管、插件、文件、通知与发布回归 |
+| `npm test` | 最终 CI 共 194 项；Linux 193 通过/1 跳过，macOS 192 通过/2 跳过，Windows 182 通过/12 跳过；全部 0 失败，跳过项为各平台不适用的环境检查 |
 | `npm run smoke:appearance` | 三个真实 xterm 的渲染光标互斥；两个原生窗口的失焦/恢复；AI 输入框、设置与插件弹窗；待处理 resize 不抢焦点；后台光标请求；闪烁偏好；移动、放大、关闭；暗色/浅色/Nord；开启 AI 面板后在 800/1100/1600px 宽度下保留可读字符网格；上下排列时键盘与鼠标调整面板高度 |
 | `npm run smoke:tmux` | 真实双 pane tmux、Unicode、字号/尺寸切换、AI 侧栏开关前后精确恢复、右键、滚轮与字符位置 |
 | `smoke:workspace`、`smoke:terminal-agent` | 本地与两路 SSH 分屏、DPI、拖动与会话归属；真实嵌套 SSH 和交互界面接管、手动暂停及断线撤销 |
@@ -28,10 +28,15 @@
 | Linux 本地打包与启动 | 在独立目录构建真实应用；`verify:package-source` 验证 60 个运行文件及元数据/依赖，`smoke:package-startup` 验证渲染器、本地 PTY 与插件宿主成功启动 |
 | 原生 Windows 验证 | 光标检查连续三轮通过；工作区/SSH 焦点与 AI 屏幕接管通过；真实 Windows → WSL Ubuntu 验证目录、AI 执行、插件读写、Unicode、交互输入和 resize；原生 PTY 输出与退出通过 |
 | 构建钩子回归 | 用临时目录模拟重编译清理后的目录，验证匹配架构的 ConPTY 运行文件补齐、原生模块保持原样、缺失或错误架构被拒绝；正式 Windows 构建仍执行原生模块重编译 |
+| Windows 本地安装目录 | 本机缺少 Visual Studio 编译环境，使用锁定依赖的 N-API 预编译模块验证构建钩子、打包资源、60 个运行文件及实际启动；GitHub Windows 正式重编译和安装包验证另行通过 |
 | 截图 | [深色](assets/workspace-dark.png)、[浅色](assets/workspace-light.png)、[插件中心](assets/plugin-center.png)，均由实际应用生成 |
 
 没有用原型中的假终端内容替代后端；没有把原型中三个同时闪烁的 CSS 光标带入产品。新外观不代表内存或持续高吞吐已经完成优化，性能验证限制仍见 [工作区记录](WORKSPACE_VERIFICATION.md)。
 
 ## 发布
 
-版本为 1.7.1，三平台工作流增加 `smoke:appearance`，打包源码验证包含 SVG/PNG 标志。最终构建与匿名下载核验结果将在发布完成后补录。
+版本 [v1.7.1](https://github.com/Amo-Zeng/AITerminal/releases/tag/v1.7.1) 已于 2026-11-10 发布，[三平台工作流及发布任务](https://github.com/Amo-Zeng/AITerminal/actions/runs/42753556486) 全部成功。安装包对应源码为 [`f33aae18e1615398d1963c7b7a47ae7f3bd76287`](https://github.com/Amo-Zeng/AITerminal/commit/f33aae18e1615398d1963c7b7a47ae7f3bd76287)。三平台均通过外观/焦点检查、60 个运行文件的一致性验证及安装目录实际启动；Windows 额外验证 ConPTY 运行库，Linux 运行真实 tmux 回归。
+
+匿名下载核验确认 `/releases/latest` 已指向 v1.7.1，Windows x64 EXE、Linux x64 AppImage、macOS arm64 DMG 均返回实际附件下载（HTTP 200）。共 8 个附件：三个安装包、三个 SBOM、`SHA256SUMS.txt`、`release-provenance.json`。校验文件与 GitHub 附件摘要一致，provenance、版本标签和源码提交一致；发布说明保留 macOS 隔离属性处理命令。
+
+随后仅更新此验证记录和打包启动检查的临时用户目录隔离；不会改变上述安装包中的运行代码。临时目录版启动检查在本地 Windows/Linux 安装目录均通过，启动检查单元测试 4 项通过。
