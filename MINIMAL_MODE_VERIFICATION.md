@@ -20,7 +20,7 @@
 | 检查 | 结果与范围 |
 | --- | --- |
 | `npm test` | 本机 WSL Linux：196 项，195 通过、1 项平台不适用跳过、0 失败 |
-| `smoke:appearance` | 真实原生窗口与 xterm；极简模式增加终端面积，隐藏工具栏与面板；保留输入焦点/草稿、原 PTY、分屏和会话目标；AI 回复浮层不挤压网格；恢复完整布局和重启记忆 |
+| `smoke:appearance` | 真实原生窗口与 xterm；极简模式增加终端面积，隐藏工具栏与面板；800/1400/1600px 宽度下输入区保持紧凑且不横向溢出；保留输入焦点/草稿、原 PTY、分屏和会话目标；AI 回复浮层不挤压网格；恢复完整布局和重启记忆 |
 | `smoke:terminal-files` | 两路真实环回 SSH/SFTP；普通 ls 鼠标点击下载字节正确；保存对话框期间切换标签不串服；中文、emoji、软换行及双宽行尾填充；目录变化/重连拒绝旧链接；不注入终端输出；根目录与初始化目录竞争 |
 | `smoke:workspace`、`smoke:tmux`、`smoke:terminal-agent` | 本地与独立 SSH 分屏、窗口调整、真实 tmux 字符和鼠标交互、原终端/嵌套 SSH AI 接管通过 |
 | `smoke:clipboard`、`smoke:documented-flows` | 复制/粘贴/回车复制、文件面板与命令交互通过 |
@@ -29,6 +29,10 @@
 
 [极简模式真实截图](assets/workspace-minimal.png) 来自本地终端中的测试与插件校验，不使用模拟终端内容。
 
+截图窗口为 1400×900，终端工作区实测 1400×848，底部输入区占 52px；分屏边界和终端自身滚动条仍保留。
+
 ## 发布
 
-推送后的三平台构建、安装包启动及公开下载核验结果将在发布完成后补充。
+版本 [v1.7.2](https://github.com/Amo-Zeng/AITerminal/releases/tag/v1.7.2) 已于 2026-11-10 发布。源码提交为 [`1de40c522fdde1512d1834279668a4695c1fc4b9`](https://github.com/Amo-Zeng/AITerminal/commit/1de40c522fdde1512d1834279668a4695c1fc4b9)，[三平台构建及发布任务](https://github.com/Amo-Zeng/AITerminal/actions/runs/42796040777) 全部成功，包含新增文件链接和极简模式检查，以及归档源码一致性和安装目录实际启动检查。
+
+匿名验证确认 `/releases/latest` 已指向 v1.7.2，Windows x64 EXE、Linux x64 AppImage、macOS arm64 DMG 均返回 HTTP 200 的实际附件下载。共 8 个附件：三个安装包、三个 SBOM、`SHA256SUMS.txt` 和 `release-provenance.json`；校验值、发布标签和来源提交一致，发布说明保留 macOS 隔离属性处理命令。后续提交仅补充本文验证结果，不改变已发布运行代码。
