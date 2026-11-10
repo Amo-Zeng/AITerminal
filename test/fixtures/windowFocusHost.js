@@ -26,7 +26,9 @@ app.whenReady().then(() => {
         'data:text/html,<title>Focus fixture</title><input autofocus aria-label="Fixture input">',
       );
       other.show();
+      owner.blur();
       other.focus();
+      other.webContents.focus();
     } else if (action === "back" && owner && !owner.isDestroyed()) {
       other?.destroy();
       other = null;

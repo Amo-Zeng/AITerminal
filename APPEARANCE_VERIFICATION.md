@@ -5,7 +5,7 @@
 ## 实现
 
 - `workspace.css` 映射原设计的青紫配色、明暗主题、柔和背景、圆角终端卡片、渐变品牌和 AI 输入区。固定插件面板放到工作区右侧，继续保留原会话、实际数据及启停状态。原有自定义终端主题保留自己的终端背景；xterm 字符仍由自身网格渲染。
-- 顶栏、会话导航与分屏控件使用本地 SVG。`build/icon.svg` 是新 `A>` 应用标志的唯一矢量源；`npm run icons:generate` 使用项目现有 Electron 栅格化，输出 1024px PNG、七种尺寸的 Windows ICO、128/256/512/1024px macOS ICNS。无需联网、系统字体或额外图像工具。原始设计文件不随安装包分发。
+- 顶栏、会话导航与分屏控件使用本地 SVG。`build/icon.svg` 是新 `A>` 应用标志的唯一矢量源；`npm run icons:generate` 使用项目现有 Electron 栅格化，输出 1024px PNG、七种尺寸的 Windows ICO、128/256/512/1024px macOS ICNS。无需联网、系统字体或额外图像工具。运行时使用的 SVG/PNG 通过独立文件集加入应用归档，避免被 electron-builder 默认的构建资源排除规则遗漏；原始设计文件不随安装包分发。
 - 当前会话目标与键盘焦点分开。光标条件为：原窗格仍存在且可见、是选中会话、窗口处于活动状态、该 xterm textarea 真正获得焦点、没有遮挡输入的弹窗。非聚焦状态使用 xterm 的 `cursorInactiveStyle: none`，不会隐藏光标位置下的正常字符。
 - 输入框、设置/插件弹窗、原生窗口失焦及恢复触发焦点同步；后台程序请求开启光标闪烁时仍受焦点约束。用户关闭闪烁后，聚焦窗格显示静态光标。CSS 关闭动画的系统偏好同样保留。
 - resize 回调只适配尺寸，不再延迟聚焦。移动/关闭窗格造成视图重新挂载时，仅恢复原本拥有键盘焦点的可见终端，不从 AI 输入框或弹窗夺取焦点。
@@ -13,7 +13,7 @@
 
 ## 验证范围
 
-本机为 WSL2 Linux x64；所有 Electron 检查使用临时用户目录。模型、SSH 使用本机测试服务，不使用真实模型或主机凭据。
+本机为 WSL2 Linux x64；所有 Electron 检查使用临时用户目录。模型、SSH 使用本机测试服务，不使用真实模型或主机凭据。原生窗口焦点检查启动两个普通窗口，不使用 Chromium 的 headless 模式，确保检查的是实际的窗口失焦和恢复。
 
 | 检查 | 验收范围 |
 | --- | --- |
@@ -23,6 +23,7 @@
 | `smoke:workspace`、`smoke:terminal-agent` | 本地与两路 SSH 分屏、DPI、拖动与会话归属；真实嵌套 SSH 和交互界面接管、手动暂停及断线撤销 |
 | `smoke:clipboard`、`smoke:config-modal`、`smoke:plugins` | 复制粘贴、回车复制、配置/Webhook 可编辑、插件安装启用与归属 |
 | `doctor`、`security:scan`、`git diff --check` | 运行资源、语法、凭据及补丁检查 |
+| Linux 本地打包与启动 | 在独立目录构建真实应用；`verify:package-source` 验证 59 个运行文件及元数据/依赖，`smoke:package-startup` 验证渲染器、本地 PTY 与插件宿主成功启动 |
 | 截图 | [深色](assets/workspace-dark.png)、[浅色](assets/workspace-light.png)、[插件中心](assets/plugin-center.png)，均由实际应用生成 |
 
 没有用原型中的假终端内容替代后端；没有把原型中三个同时闪烁的 CSS 光标带入产品。新外观不代表内存或持续高吞吐已经完成优化，性能验证限制仍见 [工作区记录](WORKSPACE_VERIFICATION.md)。

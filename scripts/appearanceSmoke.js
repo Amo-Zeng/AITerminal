@@ -165,6 +165,7 @@ runElectronSmoke(
     );
   },
   {
+    headless: false,
     entry: path.join(__dirname, "../test/fixtures/windowFocusHost.js"),
     prepareProfile(profile) {
       control = path.join(profile, "window-focus-control");

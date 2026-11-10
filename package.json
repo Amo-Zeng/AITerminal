@@ -115,7 +115,12 @@
       "!scripts/**",
       "!test/**",
       "!**/node_modules/bytenode/**",
-      "!**/node_modules/cpu-features/build/**"
+      "!**/node_modules/cpu-features/build/**",
+      {
+        "from": "build",
+        "to": "build",
+        "filter": ["icon.svg", "icon.png"]
+      }
     ],
     "asarUnpack": [
       "**/node_modules/node-pty/**/*"
