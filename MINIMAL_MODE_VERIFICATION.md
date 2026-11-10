@@ -12,7 +12,9 @@
 
 本机 WSL Linux 与原生 Windows 的文件打开、外观/焦点和系统菜单检查均已通过；`doctor`、凭据扫描与 `git diff --check` 通过。[新版截图](assets/workspace-minimal.png) 来自真实终端；1400×900 窗口内终端区域为 1400×813，顶部标签占 35px、底部输入区占 52px。
 
-全量回归与三平台发布结果在完成后补充。
+最终三平台 CI 的 196 项基础测试全部无失败：Linux 195 通过/1 跳过，macOS 194 通过/2 跳过，Windows 184 通过/12 跳过，跳过项为平台不适用检查。三平台均通过文件打开、极简模式、配置/Webhook、剪贴板、终端/插件交互回归，以及 62 个运行文件的源码一致性与安装目录实际启动检查。本地初次并行回归曾有两项插件宿主超时，单独复查相关 10 项全部通过；CI 的完整回归也通过。浏览器配置测试已补齐菜单接口，并确保接口在页面初始化前加载。
+
+版本 [v1.7.3](https://github.com/Amo-Zeng/AITerminal/releases/tag/v1.7.3) 已于 2026-11-10 发布，源码提交为 [`8c574cfb4d0edb14e6bd1da1471b8c90853d14f2`](https://github.com/Amo-Zeng/AITerminal/commit/8c574cfb4d0edb14e6bd1da1471b8c90853d14f2)，[三平台工作流与发布任务](https://github.com/Amo-Zeng/AITerminal/actions/runs/42819177649) 全部成功。匿名核验确认最新下载页指向 v1.7.3，Windows x64 EXE、Linux x64 AppImage 和 macOS arm64 DMG 下载响应均为 HTTP 200。共 8 个附件，校验文件、附件摘要、来源提交与版本标签一致；macOS 安装说明保留。后续文档提交仅记录验证结果。
 
 以下为 **1.7.2 的历史记录**。其中底部会话选择器和点击选择保存位置的行为已由 1.7.3 更正；当前使用方式见 [使用手册](USER_GUIDE.md)。
 
