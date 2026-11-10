@@ -24,7 +24,7 @@ Notifications require the app to remain running; a disconnected remote process h
 
 ## Demos
 
-**1.7.0 workspace:** independent terminals share a layout with a plugin panel pinned to its session. These are real application screenshots showing local tests and plugin example validation.
+**1.7.1 workspace:** cyan/indigo accents and rounded terminal cards, with independent terminals and a plugin panel pinned to its session. Only the pane with actual keyboard focus displays a terminal cursor; composing AI messages, opening dialogs or switching away from the app stops terminal blinking. These are real application screenshots showing local tests and plugin example validation.
 
 ![Dark workspace with three independent terminals and a pinned Terminal Pet panel](assets/workspace-dark.png)
 
@@ -102,7 +102,7 @@ See the [user guide](USER_GUIDE_en.md) for detailed instructions, shortcuts and 
 
 ## Install
 
-Download an **AITerminal** package from the [latest release](https://github.com/Amo-Zeng/AITerminal/releases/latest) and verify `SHA256SUMS.txt`. **1.7.0** adds native terminal splits, saved workspaces and pinned plugin panels, with updated light/dark UI, session navigation and a resizable AI sidebar. All three model APIs, the shared WSL execution environment and automatic Release publishing remain available.
+Download an **AITerminal** package from the [latest release](https://github.com/Amo-Zeng/AITerminal/releases/latest) and verify `SHA256SUMS.txt`. **1.7.1** refreshes light/dark appearance and all three platform icons, fixes cursor focus across splits and corrects terminal size measurement around pane padding. Native splits, workspaces, plugins, nested SSH control and automatic Release publishing remain available.
 
 | Platform | Package | Requirements |
 | --- | --- | --- |

@@ -1,4 +1,4 @@
-<p align="center"><img src="build/icon.png" alt="AITerminal 原始 Logo" width="112"></p>
+<p align="center"><img src="build/icon.png" alt="AITerminal A> 渐变 Logo" width="112"></p>
 
 # AITerminal
 
@@ -24,7 +24,7 @@ AITerminal 是基于 Electron、xterm.js 和 SSH2 的开源桌面终端，将本
 
 ## 功能演示
 
-**1.7.0 工作区**：同屏运行独立终端，右侧固定所属会话的插件面板。下图为真实应用截图，终端显示本地测试与插件示例校验结果。
+**1.7.1 工作区**：采用青紫渐变与圆角卡片外观，同屏运行独立终端，右侧固定所属会话的插件面板。只有实际获得输入焦点的窗格显示终端光标；点击 AI 输入框、打开弹窗或切出应用时不再闪烁。下图为真实应用截图，终端显示本地测试与插件示例校验结果。
 
 ![深色工作区：三个独立终端与固定的终端宠物面板](assets/workspace-dark.png)
 
@@ -102,7 +102,7 @@ AI 默认接管提交任务时选中的终端：读取它的文本屏幕并输�
 
 ## 安装与开始使用
 
-从 [最新版本下载页](https://github.com/Amo-Zeng/AITerminal/releases/latest) 下载对应平台的 **AITerminal** 安装包，核对该版本附带的 `SHA256SUMS.txt`。**1.7.0** 新增原生终端分屏、工作区布局和固定插件面板，更新明暗界面、会话导航和可调 AI 侧栏；保留三种模型 API、WSL 同环境接管及自动同步 Releases 的发布流程。
+从 [最新版本下载页](https://github.com/Amo-Zeng/AITerminal/releases/latest) 下载对应平台的 **AITerminal** 安装包，核对该版本附带的 `SHA256SUMS.txt`。**1.7.1** 更新明暗界面与三平台应用图标，修复分屏光标焦点及终端内边距导致的尺寸计算问题；保留原生分屏、工作区、插件中心、嵌套 SSH 接管和自动同步 Releases 的发布流程。
 
 | 平台 | 安装包 | 运行条件 |
 | --- | --- | --- |

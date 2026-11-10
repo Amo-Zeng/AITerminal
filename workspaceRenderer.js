@@ -56,28 +56,44 @@ window.AITerminalWorkspace = class {
   }
   iconize(root) {
     const paths = {
-      "split-horizontal": "M3 4h18v16H3z M12 4v16",
-      "split-vertical": "M3 4h18v16H3z M3 12h18",
+      "split-horizontal":
+        "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M12 3v18",
+      "split-vertical":
+        "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M3 12h18",
       zoom: "M8 3H3v5 M16 3h5v5 M3 16v5h5 M21 16v5h-5",
       detach: "M13 4h7v7 M20 4L10 14 M9 4H4v16h16v-5",
       files: "M3 7h7l2-3h9v16H3z",
       sidebar: "M3 4h18v16H3z M9 4v16",
-      theme: "M12 3a9 9 0 1 0 0 18z M12 3a9 9 0 0 1 0 18",
-      settings:
-        "M12 3v3 M12 18v3 M3 12h3 M18 12h3 M5.6 5.6l2.2 2.2 M16.2 16.2l2.2 2.2 M18.4 5.6l-2.2 2.2 M7.8 16.2l-2.2 2.2 M12 7a5 5 0 1 0 0 10a5 5 0 1 0 0-10",
+      theme: "M20.9 13a9 9 0 1 1-9.9-9.9A7 7 0 0 0 20.9 13z",
+      settings: "M4 7h9 M17 7h3 M4 17h3 M11 17h9 M13 4h4v6h-4z M7 14h4v6H7z",
+      save: "M5 3h12l4 4v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z M7 3v6h9V3 M7 21v-8h10v8",
+      plugins:
+        "M8 3h4v3a2 2 0 1 0 4 0V3h5v6h-3a2 2 0 1 0 0 4h3v8h-8v-3a2 2 0 1 0-4 0v3H3v-8h3a2 2 0 1 0 0-4H3V3z",
+      search: "M16 16l5 5 M10.5 3a7.5 7.5 0 1 0 0 15a7.5 7.5 0 0 0 0-15",
+      import: "M12 3v12 M7 10l5 5 5-5 M4 15v6h16v-6",
+      export: "M12 15V3 M7 8l5-5 5 5 M4 15v6h16v-6",
+      sparkles:
+        "M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z M20 2v4 M18 4h4",
     };
-    for (const button of root.querySelectorAll("[data-workspace-action]")) {
-      const drawing = paths[button.dataset.workspaceAction];
+    for (const button of root.querySelectorAll(
+      "[data-workspace-action], [data-icon]",
+    )) {
+      const drawing =
+        paths[button.dataset.icon || button.dataset.workspaceAction];
       if (!drawing || button.querySelector("svg")) continue;
       if (
         button.classList.contains("icon-button") ||
         button.closest(".pane-actions")
       )
         button.textContent = "";
-      else if (button.firstChild?.nodeType === Node.TEXT_NODE)
+      else if (
+        !button.dataset.icon &&
+        button.firstChild?.nodeType === Node.TEXT_NODE
+      )
         button.firstChild.textContent = "";
       const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
       svg.setAttribute("viewBox", "0 0 24 24");
+      svg.classList.add("ui-icon");
       svg.setAttribute("aria-hidden", "true");
       const path = document.createElementNS(svg.namespaceURI, "path");
       path.setAttribute("d", drawing);
@@ -127,7 +143,7 @@ window.AITerminalWorkspace = class {
     if (!content || content.querySelector(".pane-header")) return;
     const header = document.createElement("div");
     header.className = "pane-header";
-    header.innerHTML = `<span class="pane-status"></span><button class="pane-title" data-workspace-action="rename" title="重命名会话"></button><span class="pane-environment"></span><div class="pane-actions"><button data-workspace-action="files" title="远程文件" aria-label="远程文件">▱</button><button data-workspace-action="split-horizontal" title="左右分屏" aria-label="左右分屏">◫</button><button data-workspace-action="split-vertical" title="上下分屏" aria-label="上下分屏">⊟</button><button data-workspace-action="zoom" title="放大 / 还原窗格" aria-label="放大或还原窗格">⛶</button><button data-workspace-action="detach" title="移到独立标签" aria-label="移到独立标签">↗</button><button data-action="close-terminal-tab" title="关闭会话" aria-label="关闭会话">×</button></div>`;
+    header.innerHTML = `<span class="pane-lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="pane-status"></span><button class="pane-title" data-workspace-action="rename" title="重命名会话"></button><span class="pane-environment"></span><div class="pane-actions"><button data-workspace-action="files" title="远程文件" aria-label="远程文件">▱</button><button data-workspace-action="split-horizontal" title="左右分屏" aria-label="左右分屏">◫</button><button data-workspace-action="split-vertical" title="上下分屏" aria-label="上下分屏">⊟</button><button data-workspace-action="zoom" title="放大 / 还原窗格" aria-label="放大或还原窗格">⛶</button><button data-workspace-action="detach" title="移到独立标签" aria-label="移到独立标签">↗</button><button data-action="close-terminal-tab" title="关闭会话" aria-label="关闭会话">×</button></div>`;
     content.prepend(header);
     this.iconize(header);
     content.addEventListener(
@@ -277,6 +293,9 @@ window.AITerminalWorkspace = class {
     }
   }
   render() {
+    const focused = [...terminalTabs].find(
+      ([, info]) => document.activeElement === info.terminal.textarea,
+    )?.[0];
     document.body.classList.remove("resizing-panes");
     for (const [id] of terminalTabs) {
       const node = getTabContent(id);
@@ -293,6 +312,10 @@ window.AITerminalWorkspace = class {
     this.fit();
     document.getElementById("paneCount").textContent =
       `${terminalTabs.size} 会话 · ${this.layout.leaves(tree).length} 窗格`;
+    // Reparenting the same xterm view temporarily removes its textarea from the
+    // document. Restore only the actual input owner, never a merely selected tab.
+    if (focused) focusTerminalTab(focused);
+    syncTerminalFocus();
   }
   build(tree) {
     if (tree.type === "terminal") {
@@ -691,7 +714,7 @@ window.AITerminalWorkspace = class {
     );
     const title = document.createElement("span");
     title.textContent = remotePath;
-    title.title = `直连 SSH：${owner.connectionConfig?.host || ''} · ${remotePath}（不跟随终端内的嵌套 SSH）`;
+    title.title = `直连 SSH：${owner.connectionConfig?.host || ""} · ${remotePath}（不跟随终端内的嵌套 SSH）`;
     const refresh = document.createElement("button");
     refresh.textContent = "↻";
     refresh.title = "刷新目录";

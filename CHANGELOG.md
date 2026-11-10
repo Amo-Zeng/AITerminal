@@ -4,6 +4,14 @@ All notable changes to AITerminal will be documented here.
 
 ## Unreleased
 
+## 1.7.1 - 2026-11-10
+
+- Applied the supplied `beauty.html` design to the live workspace: cyan/indigo accents, translucent chrome, rounded terminal cards, an AI composer card, a full-height plugin dock and consistent SVG controls in dark/light themes.
+- Replaced the application logo and Windows/macOS/Linux icons with the new gradient `A>` mark. Keep `build/icon.svg` as the source and regenerate PNG/ICO/ICNS with `npm run icons:generate`; no external fonts or network dependencies are needed.
+- Show the xterm cursor only in the actual focused terminal, respecting the user's blink setting. AI inputs, dialogs and inactive native windows clear terminal cursor focus; background terminal cursor requests cannot enable blinking. Restore focus only to the original input owner after moving or closing panes.
+- Removed delayed focus from resize callbacks and placed xterm in an unpadded grid host so card padding does not inflate reported dimensions or clip glyphs. Real tmux resize and rendering regressions pass.
+- Added cross-platform appearance checks for rendered cursor exclusivity, native-window blur/restore, dialogs, composer focus, pane lifecycle, themes and viewport sizes. Package-source verification now includes the new SVG and PNG branding assets.
+
 ## 1.7.0 - 2026-11-09
 
 - Added default Current terminal AI control: read the owning xterm screen and send audited keyboard input through its captured PTY/SSH stream, including nested SSH and existing interactive applications. Tasks remain in their original pane across focus changes; manual input pauses AI without stealing terminal focus. Backend replacement, disconnect and pause revoke late replies and pending approvals.

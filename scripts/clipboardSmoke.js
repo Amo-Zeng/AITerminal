@@ -199,7 +199,7 @@ async function runElectronSmoke(runTest, options = {}) {
         '--no-sandbox',
         '--disable-gpu',
         `--remote-debugging-port=${port}`,
-        path.join(ROOT, 'main.js')
+        options.entry || path.join(ROOT, 'main.js')
     ];
     const child = spawn(electronPath, args, {
         cwd: ROOT,

@@ -896,7 +896,7 @@ function createWindow() {
 	const loadOptions = !app.isPackaged && process.env.AITERMINAL_CLIPBOARD_SMOKE === '1'
 	    ? { query: { 'aiterminal-clipboard-smoke': '1' } }
 	    : undefined;
-	newWindow.loadFile('index.html', loadOptions);
+	newWindow.loadFile(path.join(__dirname, 'index.html'), loadOptions);
     newWindow.once('ready-to-show', () => newWindow.show());
     newWindow.on('closed', () => {
         // 清理窗口相关的连接

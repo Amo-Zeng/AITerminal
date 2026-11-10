@@ -23,6 +23,7 @@
 这些文件记录特定版本的验证范围，不代替当前使用指南。
 
 - [1.7.0 多会话工作区与界面](WORKSPACE_VERIFICATION.md)
+- [1.7.1 beauty 外观、应用图标与光标焦点](APPEARANCE_VERIFICATION.md)
 - [文档恢复与 PR #9 审查](DOCUMENTATION_RESTORATION.md)
 - [API 与终端环境](API_ENVIRONMENT_VERIFICATION.md)
 - [插件系统](PLUGIN_VALIDATION.md) · [通知系统](WEBHOOK_VALIDATION.md)

@@ -2,6 +2,8 @@
 
 日期：2026-11-09。目标：实现可实际使用的本地/SSH 原生分屏，把焦点、布局和会话生命周期分开；更新桌面界面，同时保留终端交互、插件、通知及历史文档。设计来源见 [HexHub 评估](HEXHUB_ASSESSMENT.md)，操作见 [中文手册](USER_GUIDE.md#多会话工作区)和[英文手册](USER_GUIDE_en.md#multi-session-workspaces)。
 
+本记录对应 1.7.0。用户随后要求采用 `beauty.html` 并更换图标，当前外观与光标焦点说明见 [1.7.1 验证](APPEARANCE_VERIFICATION.md)；README 中截图随当前版本更新，1.7.0 的历史截图可在该版本标签中查看。
+
 ## 实现范围
 
 - `lib/workspaceLayout.js` 管理递归布局及导入校验；`workspaceRenderer.js` 管理可见窗格、分隔线、搜索、拖动、放大、布局保存/恢复、文件面板和固定插件面板。原 `renderer.js` 与主进程继续拥有会话和 IPC。

@@ -291,6 +291,60 @@
     return tabId === activeTabId && ownsTerminalTab(tabId, info) && info.terminal === terminal;
   }
 
+  function terminalOverlayOpen() {
+    return [...document.querySelectorAll('dialog[open], .modal, .custom-dialog-overlay')]
+      .some(node => node.getClientRects().length > 0 && getComputedStyle(node).visibility !== 'hidden');
+  }
+
+  function syncTerminalCursor(tabId) {
+    const info = terminalTabs.get(tabId);
+    if (!info || info.isClosing) return;
+    const terminal = info.terminal;
+    const focused = tabId === activeTabId && isTabVisible(tabId) && document.hasFocus() &&
+      !document.hidden && document.activeElement === terminal.textarea && !terminalOverlayOpen();
+    const blink = focused && terminalConfig.cursorBlink !== false;
+    if (terminal.options.cursorBlink !== blink) terminal.options.cursorBlink = blink;
+    if (terminal.options.cursorInactiveStyle !== 'none') terminal.options.cursorInactiveStyle = 'none';
+    if (info.inputFocused !== focused) {
+      info.inputFocused = focused;
+      getTabContent(tabId)?.classList.toggle('pane-input-focused', focused);
+      terminal.refresh(0, terminal.rows - 1);
+    }
+  }
+
+  function syncTerminalFocus() {
+    // A selected AI/session target can remain selected while a form owns input.
+    // CSS modals do not automatically blur their underlying textarea.
+    if (terminalOverlayOpen()) {
+      for (const info of terminalTabs.values())
+        if (document.activeElement === info.terminal.textarea) info.terminal.blur();
+    }
+    for (const id of terminalTabs.keys()) syncTerminalCursor(id);
+  }
+
+  function focusTerminalTab(tabId) {
+    const info = terminalTabs.get(tabId);
+    if (tabId !== activeTabId || !ownsTerminalTab(tabId, info) || !isTabVisible(tabId) ||
+        !document.hasFocus() || document.hidden || terminalOverlayOpen()) return;
+    info.terminal.focus();
+    syncTerminalFocus();
+  }
+
+  function setupTerminalFocus() {
+    const refresh = () => queueMicrotask(syncTerminalFocus);
+    document.addEventListener('focusin', refresh);
+    document.addEventListener('focusout', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
+    window.addEventListener('blur', refresh);
+    const overlays = new MutationObserver(refresh);
+    for (const node of document.querySelectorAll('.modal, dialog'))
+      overlays.observe(node, {attributes: true, attributeFilter: ['style', 'class', 'open', 'hidden']});
+    // Custom dialogs are direct body children; terminal output is not observed.
+    overlays.observe(document.body, {childList: true});
+    syncTerminalFocus();
+  }
+
   async function copyTerminalSelection(tabId, terminal, clearSelection = false) {
     if (!ownsActiveTerminal(tabId, terminal) || !terminal?.hasSelection?.()) return false;
     const selection = terminal.getSelection?.() || '';
@@ -330,7 +384,7 @@
 	      info.fitAddon.fit();
 	      const rows = Math.max(0, (info.terminal.rows || 1) - 1);
 	      info.terminal.refresh(0, rows);
-	      if (focus && tabId === activeTabId) info.terminal.focus();
+	      if (focus) focusTerminalTab(tabId);
 	      if (syncSsh) {
 	        syncSshResizeForTab(tabId);
 	        syncLocalResizeForTab(tabId);
@@ -345,9 +399,10 @@
   function scheduleFitTerminalTab(tabId, options = {}) {
     const info = terminalTabs.get(tabId);
     if (!info || info.isClosing) return;
+    // Focus is an immediate user action, never a delayed side effect of resize.
+    if (options.focus) focusTerminalTab(tabId);
     const pending = info.pendingFitOptions || {};
     info.pendingFitOptions = {
-      focus: pending.focus || options.focus,
       syncSsh: pending.syncSsh || options.syncSsh
     };
     if (info.fitFrame) return;
@@ -400,8 +455,8 @@
         }
 
         const terminalThemes = {
-            dark: { background: '#11151c', foreground: '#dce3ee', cursor: '#87b9ff', selectionBackground: '#304765', black: '#242b38', red: '#f07882', green: '#8bcba4', yellow: '#e3c783', blue: '#82afff', magenta: '#baa5e8', cyan: '#7cc9d5', white: '#dce3ee' },
-            light: { background: '#ffffff', foreground: '#233047', cursor: '#3979d7', selectionBackground: '#d8e7fb', black: '#233047', red: '#b43b46', green: '#287044', yellow: '#855c0b', blue: '#245da8', magenta: '#7c4b9b', cyan: '#1e727d', white: '#68778c', brightBlack: '#69768a', brightRed: '#bd3848', brightGreen: '#247642', brightYellow: '#8e650a', brightBlue: '#286bcc', brightMagenta: '#8755af', brightCyan: '#217b89', brightWhite: '#33415a' },
+            dark: { background: '#0c1322', foreground: '#dbe4f0', cursor: '#22d3ee', cursorAccent: '#070b14', selectionBackground: '#25435a', black: '#253148', red: '#f87171', green: '#34d399', yellow: '#fbbf24', blue: '#818cf8', magenta: '#c4b5fd', cyan: '#67e8f9', white: '#dbe4f0', brightBlack: '#7c8aa5', brightRed: '#fca5a5', brightGreen: '#6ee7b7', brightYellow: '#fde68a', brightBlue: '#a5b4fc', brightMagenta: '#ddd6fe', brightCyan: '#a5f3fc', brightWhite: '#f1f5f9' },
+            light: { background: '#ffffff', foreground: '#1f2a3d', cursor: '#0891b2', selectionBackground: '#cdeaf0', black: '#1f2a3d', red: '#b91c1c', green: '#047857', yellow: '#9a5c05', blue: '#4f46e5', magenta: '#9333a3', cyan: '#0e7490', white: '#5b6b84', brightBlack: '#62738b', brightRed: '#dc2626', brightGreen: '#059669', brightYellow: '#a16207', brightBlue: '#6366f1', brightMagenta: '#a21caf', brightCyan: '#0891b2', brightWhite: '#334155' },
             'solarized-dark': { background: '#002b36', foreground: '#839496', cursor: '#93a1a1', selectionBackground: 'rgba(147, 161, 161, 0.4)' },
             'solarized-light': { background: '#fdf6e3', foreground: '#657b83', cursor: '#586e75', selectionBackground: 'rgba(88, 110, 117, 0.4)' },
             monokai: { background: '#272822', foreground: '#f8f8f2', cursor: '#f8f8f0', selectionBackground: 'rgba(248, 248, 240, 0.3)' },
@@ -485,6 +540,7 @@
             loadTerminalConfigEarly();
             initializeTerminal();
             workspace = new window.AITerminalWorkspace();
+            setupTerminalFocus();
             setupEventListeners();
             setupMenuEventListeners();
             setupModalKeyboardShortcuts();
@@ -572,7 +628,8 @@
             }
 
 	            const newTerm = new Terminal({
-	                cursorBlink: terminalConfig.cursorBlink,
+	                cursorBlink: false,
+	                cursorInactiveStyle: 'none',
 	                cursorStyle: terminalConfig.cursorStyle,
 	                // PTY/SSH output already carries terminal control sequences.
 	                // LF must preserve the column for tmux's partial pane redraws.
@@ -592,7 +649,12 @@
             newTerm.loadAddon(newWebLinksAddon);
             newTerm.loadAddon(new Unicode11Addon.Unicode11Addon());
             newTerm.unicode.activeVersion = '11';
-            newTerm.open(terminalContainer);
+            // FitAddon measures its immediate parent, so keep decorative pane
+            // padding outside this unpadded grid host.
+            const grid = document.createElement('div');
+            grid.className = 'terminal-grid';
+            terminalContainer.append(grid);
+            newTerm.open(grid);
 
             // 添加ResizeObserver监听容器尺寸变化
             const resizeObserver = new ResizeObserver((entries) => {
@@ -685,6 +747,7 @@
             terminal.onBinary(data => {
                 sendTerminalInput(tabId, data, { encoding: 'binary' });
             });
+            terminal.onWriteParsed(() => syncTerminalCursor(tabId));
             terminal.onResize(() => {
                 syncSshResizeForTab(tabId);
                 syncLocalResizeForTab(tabId);
@@ -885,6 +948,7 @@
 
                         workspace?.selected(tabId, previousTabId);
 	                    scheduleFitTerminalTab(tabId, { focus: options.focus !== false, syncSsh: true });
+                        syncTerminalFocus();
 	            }
 	        }
 	    }
@@ -3357,7 +3421,7 @@
                 tabInfo.terminal.options.fontSize = newConfig.fontSize;
 	                tabInfo.terminal.options.fontFamily = getSafeTerminalFontFamily(newConfig.fontFamily);
                 tabInfo.terminal.options.cursorStyle = newConfig.cursorStyle;
-                tabInfo.terminal.options.cursorBlink = newConfig.cursorBlink;
+                tabInfo.terminal.options.cursorInactiveStyle = 'none';
                 tabInfo.terminal.options.scrollback = newConfig.scrollback;
                 if (terminalThemes[newConfig.theme]) {
                     tabInfo.terminal.options.theme = terminalThemes[newConfig.theme];
@@ -3366,6 +3430,7 @@
 
             // 同步更新全局UI主题
             updateGlobalTheme(newConfig.theme);
+            syncTerminalFocus();
 
 	            if (workspace) workspace.fit(); else scheduleFitTerminalTab(activeTabId, { syncSsh: true });
 	            localStorage.setItem('terminalConfig', JSON.stringify(newConfig));
@@ -3373,6 +3438,7 @@
 
         function updateGlobalTheme(themeName) {
             const body = document.body;
+            body.style.setProperty('--terminal-surface', (terminalThemes[themeName] || terminalThemes.dark).background);
             
             // 移除所有现有的主题类
             body.removeAttribute('data-theme');

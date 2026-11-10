@@ -1,6 +1,6 @@
 {
   "name": "aiterminal",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "AI驱动的智能终端 - 支持本地终端与SSH远程管理",
   "main": "main.js",
   "scripts": {
@@ -14,12 +14,14 @@
     "smoke:documented-flows": "node scripts/documentedFlowsSmoke.js",
     "smoke:terminal": "node scripts/terminalInteractionSmoke.js",
     "smoke:workspace": "node scripts/workspaceSmoke.js",
+    "smoke:appearance": "node scripts/appearanceSmoke.js",
     "smoke:terminal-agent": "node scripts/terminalAgentSmoke.js",
     "smoke:tmux": "node scripts/terminalInteractionSmoke.js --tmux",
     "smoke:plugins": "node scripts/pluginCenterSmoke.js",
     "smoke:plugin-runtime": "node scripts/pluginRuntimeSmoke.js",
     "smoke:notifications": "node scripts/notificationSmoke.js",
     "plugin:dev": "node scripts/pluginDev.js",
+    "icons:generate": "electron --no-sandbox scripts/generateIcons.js",
     "smoke:renderer-security": "node scripts/rendererSecuritySmoke.js",
     "smoke:pty": "electron --no-sandbox scripts/ptySmoke.js",
     "smoke:local-environment": "electron --no-sandbox scripts/localEnvironmentSmoke.js",
@@ -103,6 +105,7 @@
     "files": [
       "**/*",
       "!main.jsc",
+      "!beauty.html",
       "!compile.js",
       "!release/**",
       "!.fix_display.md.swp",

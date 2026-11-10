@@ -95,6 +95,14 @@ jobs:
         if: runner.os == 'Linux'
         run: xvfb-run -a npm run smoke:workspace
 
+      - name: Test appearance and terminal cursor focus
+        if: runner.os != 'Linux'
+        run: npm run smoke:appearance
+
+      - name: Test appearance and terminal cursor focus under Xvfb
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run smoke:appearance
+
       - name: Test AI control of the original terminal and nested SSH
         if: runner.os != 'Linux'
         run: npm run smoke:terminal-agent

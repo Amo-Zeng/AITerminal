@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
     <title>AITerminal - AI驱动的智能终端</title>
+    <link rel="icon" type="image/svg+xml" href="build/icon.svg">
     <link rel="stylesheet" href="pluginCenter.css">
     <link rel="stylesheet" href="node_modules/@xterm/xterm/css/xterm.css">
     <script src="node_modules/@xterm/xterm/lib/xterm.js"></script>
@@ -2086,17 +2087,17 @@
 <body>
     <div class="container">
         <header class="app-header">
-            <div class="app-brand"><img src="build/icon.png" alt="AITerminal Logo"><strong>AITerminal</strong><span class="brand-divider"></span><span class="brand-caption">你的智能运维工作台</span></div>
-            <div class="app-header-actions"><button class="chrome-button" data-workspace-action="save" title="保存当前会话布局">保存工作区</button><button class="chrome-button" id="openPluginCenter" title="插件中心 (Ctrl/Cmd+Shift+P)">插件中心 <span class="button-arrow">↗</span></button><button class="icon-button" data-workspace-action="theme" title="切换明暗主题" aria-label="切换明暗主题">◐</button><button class="icon-button" data-workspace-action="settings" title="连接、AI、通知与外观设置" aria-label="打开设置">⚙</button></div>
+            <div class="app-brand"><img src="build/icon.svg" alt="AITerminal Logo"><strong>AITerminal</strong><span class="brand-caption">你的智能运维工作台</span></div>
+            <div class="app-header-actions"><button class="chrome-button" data-workspace-action="save" title="保存当前会话布局"><span>保存工作区</span></button><button class="chrome-button" id="openPluginCenter" data-icon="plugins" title="插件中心 (Ctrl/Cmd+Shift+P)">插件中心</button><button class="icon-button" data-workspace-action="theme" title="切换明暗主题" aria-label="切换明暗主题">◐</button><button class="icon-button" data-workspace-action="settings" title="连接、AI、通知与外观设置" aria-label="打开设置">⚙</button></div>
         </header>
         <div class="app-body">
         <aside class="workspace-sidebar" aria-label="会话与工作区">
             <div class="sidebar-heading"><span>工作空间</span><button class="icon-button" data-action="create-terminal-tab" title="新建本地终端" aria-label="新建本地终端">+</button></div>
-            <label class="session-search"><span>⌕</span><input id="sessionSearch" placeholder="查找会话…" aria-label="查找会话"><kbd>⇧⌘F</kbd></label>
+            <label class="session-search"><span data-icon="search"></span><input id="sessionSearch" placeholder="查找会话…" aria-label="查找会话"><kbd>⇧⌘F</kbd></label>
             <div class="sidebar-section-title">会话 <span>SESSIONS</span></div><nav id="sessionList" aria-label="终端会话"></nav>
             <div class="sidebar-section-title">连接 <button class="sidebar-add" data-workspace-action="settings" title="管理连接">+</button></div><div id="connectionProfiles"></div>
             <div class="sidebar-section-title">已保存的工作区</div><div id="savedWorkspaces"></div>
-            <div class="sidebar-bottom"><button class="chrome-button" data-workspace-action="import">导入布局</button><button class="chrome-button" data-workspace-action="export">导出布局</button><input type="file" id="workspaceFile" accept=".json" hidden></div>
+            <div class="sidebar-bottom"><button class="chrome-button" data-workspace-action="import"><span>导入布局</span></button><button class="chrome-button" data-workspace-action="export"><span>导出布局</span></button><input type="file" id="workspaceFile" accept=".json" hidden></div>
         </aside>
         <section class="workspace-main">
         <div class="workspace-toolbar"><div class="workspace-breadcrumb"><button class="icon-button" data-workspace-action="sidebar" title="收起 / 展开侧栏" aria-label="切换侧栏">☰</button><span>终端</span><span class="breadcrumb-slash">/</span><strong id="activeSessionLabel">终端 1</strong></div><div class="workspace-tools"><button class="chrome-button" data-workspace-action="split-horizontal" title="左右分屏 (Ctrl/Cmd+Shift+E)">◫ <span>左右分屏</span></button><button class="chrome-button" data-workspace-action="split-vertical" title="上下分屏 (Ctrl/Cmd+Alt+Shift+E)">⊟ <span>上下分屏</span></button><button class="icon-button" data-workspace-action="zoom" title="放大 / 还原当前窗格" aria-label="放大或还原当前窗格">⛶</button></div></div>
@@ -2122,13 +2123,12 @@
                 </div>
             </div>
             <div id="workspaceParking" hidden></div>
-            <aside id="pluginDock" aria-label="固定的插件面板" hidden></aside>
             <div id="aiDivider" role="separator" aria-label="调整 AI 侧栏宽度" aria-orientation="vertical" tabindex="0" hidden></div>
             <aside id="aiDock" aria-label="AI 会话面板" hidden></aside>
             </div>
         </main>
         <footer class="input-section">
-            <div class="composer-caption"><span class="composer-label">AI 助手</span><span>发送至 <strong id="composerTarget">终端 1</strong></span><label class="ai-control-label">接管方式 <select id="aiControlMode" aria-label="AI 接管方式" title="当前终端读取此窗格并向它输入；高级模式可使用直连主机与插件服务，不保证跟随嵌套 SSH。"><option value="terminal">当前终端 · 跟随屏幕</option><option value="host">高级 · 主机与插件</option></select></label><span class="composer-hint">任务绑定提交时的窗格</span></div>
+            <div class="composer-caption"><span class="composer-label" data-icon="sparkles">AI 助手</span><span class="composer-target">发送至 <strong id="composerTarget">终端 1</strong></span><label class="ai-control-label">接管方式 <select id="aiControlMode" aria-label="AI 接管方式" title="当前终端读取此窗格并向它输入；高级模式可使用直连主机与插件服务，不保证跟随嵌套 SSH。"><option value="terminal">当前终端 · 跟随屏幕</option><option value="host">高级 · 主机与插件</option></select></label><span class="composer-hint">任务绑定提交时的窗格</span></div>
             <div class="input-container">
                 <div style="position: relative; flex: 1;">
                     <input type="text" class="command-input" id="commandInput" placeholder="描述你想完成的任务，或输入 / 选择命令…" aria-label="AI 消息或特殊命令">
@@ -2155,9 +2155,10 @@
             </div>
             <div class="upload-hint">📁 释放文件以上传到远程目录</div>
         </footer>
-        <div class="workbench-status"><span class="status-indicator" id="statusIndicator"></span><span id="connectionLabel">本地终端</span><span id="workspaceMessage" role="status"></span><span id="paneCount">1 会话 · 1 窗格</span></div>
         </section>
+        <aside id="pluginDock" aria-label="固定的插件面板" hidden></aside>
         </div>
+        <div class="workbench-status"><span class="status-indicator" id="statusIndicator"></span><span id="connectionLabel">本地终端</span><span id="workspaceMessage" role="status"></span><span id="paneCount">1 会话 · 1 窗格</span></div>
     </div>
     <div id="sshModal" class="modal"></div>
 

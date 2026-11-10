@@ -114,6 +114,8 @@ async function checkTmux({ evaluate, click, wheel }) {
     delete env.TMUX_PANE;
     const tmux = (...args) => execFileSync('tmux', ['-L', socket, ...args], { env, encoding: 'utf8', timeout: 10000 }).trimEnd();
     const size = await evaluate("({cols: terminalTabs.get('tab-1').terminal.cols, rows: terminalTabs.get('tab-1').terminal.rows})");
+    const geometry = () => evaluate(`(()=>{const i=terminalTabs.get('tab-1'),s=getComputedStyle(i.container),p=getComputedStyle(i.container.parentElement);return {container:i.container.getBoundingClientRect().width,parent:i.container.parentElement.getBoundingClientRect().width,width:s.width,max:s.maxWidth,padding:s.padding,flex:s.flex,expected:i.fitAddon.proposeDimensions(),font:i.terminal.options.fontSize,parentStyle:p.width,cell:i.terminal.element.querySelector('.xterm-screen').getBoundingClientRect().width/i.terminal.cols}})()`);
+    const initialGeometry=await geometry();
     let mismatch;
     try {
         tmux('-f', '/dev/null', 'new-session', '-d', '-s', 'smoke', '-x', String(size.cols), '-y', String(size.rows), '/bin/sh');
@@ -233,7 +235,7 @@ async function checkTmux({ evaluate, click, wheel }) {
         console.log('Real tmux smoke ok: two panes, Unicode, resize, mouse selection, scrollback, tab isolation');
     } catch (error) {
         const terminalSize = await evaluate("({cols: terminalTabs.get('tab-1').terminal.cols, rows: terminalTabs.get('tab-1').terminal.rows})");
-        throw new Error(`${error.message}\n${JSON.stringify({ terminalSize, tmuxSize: tmux('list-clients', '-F', '#{client_width} #{client_height}'), mismatch })}`);
+        throw new Error(`${error.message}\n${JSON.stringify({ initialSize: size, initialGeometry, geometry:await geometry(), terminalSize, tmuxSize: tmux('list-clients', '-F', '#{client_width} #{client_height}'), mismatch })}`);
     } finally {
         try { tmux('kill-server'); } catch {}
     }

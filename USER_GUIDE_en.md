@@ -95,6 +95,8 @@ This single-configuration export differs from Save workspace in the top-right to
 
 ## Appearance and shortcuts
 
+Version 1.7.1 adopts the cyan/indigo, rounded-card design from `beauty.html`, with a new `A>` icon on all platforms. Only the terminal with keyboard focus displays a cursor. Unfocused panes, AI composition, dialogs and inactive application windows show no terminal cursor. Disabling cursor blink keeps a steady cursor in the focused terminal. The selected session still determines the AI submission target; cursor appearance does not indicate whether a background task is running.
+
 Terminal settings include font, size, theme, cursor shape (block/underline/bar), cursor blink and scrollback lines. Resizing adjusts the visible terminal and updates background tabs when they become visible.
 
 | Action | Result |
