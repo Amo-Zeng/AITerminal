@@ -1,7 +1,5 @@
         // --- State and Variables ---
         let isSSHConnected = false;
-        let mylsLinkProvider = null;
-        let currentMylsData = null;
         let term, fitAddon, webLinksAddon;
         
         // AI接管模式状态
@@ -705,8 +703,7 @@
 		                aiTakeoverStreamStarted: false,
 		                aiTakeoverLastStreamContent: '',
 		                takeoverFlowState: null,
-                mylsData: null,
-                mylsLinkProvider: null
+                fileLinks: null
             });
 
             // 如果是活动标签页，设置全局引用
@@ -720,6 +717,13 @@
 
             // 设置终端事件监听器
             setupTerminalEventListeners(tabId, newTerm);
+            terminalTabs.get(tabId).fileLinks = window.AITerminalFileLinks.attach(newTerm, {
+                enabled: () => ownsTerminalTab(tabId, terminalTabs.get(tabId)) &&
+                    terminalTabs.get(tabId)?.terminal === newTerm && canSendToSsh(tabId),
+                load: () => window.electronAPI.sshListTerminalFiles(tabId),
+                download: (file) => window.electronAPI.sshDownloadFile(file.path, tabId, file.token),
+                message: text => workspace?.message(text),
+            });
             // Establish the real size before spawning the PTY, and coalesce
             // later layout changes into one fit per frame for this tab.
             fitTerminalTab(tabId);
@@ -919,8 +923,6 @@
 	                    term = tabInfo.terminal;
 	                    fitAddon = tabInfo.fitAddon;
 	                    webLinksAddon = tabInfo.webLinksAddon;
-	                    currentMylsData = tabInfo.mylsData || null;
-	                    mylsLinkProvider = tabInfo.mylsLinkProvider || null;
 			                    activeTabId = tabId;
 		                    window.electronAPI?.setActiveTab?.(tabId);
 			                    syncTabAiConfig(tabId);
@@ -1000,9 +1002,7 @@
 	            if (tabInfo.resizeObserver) {
 	                try { tabInfo.resizeObserver.disconnect(); } catch {}
 	            }
-	            if (tabInfo.mylsLinkProvider) {
-	                try { tabInfo.mylsLinkProvider.dispose(); } catch {}
-	            }
+	            tabInfo.fileLinks?.dispose();
 	            if (tabInfo.terminal) {
                 tabInfo.terminal.dispose();
             }
@@ -1330,7 +1330,7 @@
             }
 
             const isAiCommand = ['ai', 'ask', 'fix', 'analyze', 'cmd'].includes(command);
-            const isSSHRequiredCommand = ['rfe', 'myls'].includes(command);
+            const isSSHRequiredCommand = command === 'rfe';
 
 		    if (isSSHRequiredCommand && !canSendToSsh(commandTabId)) {
 		                writeToTerminalTab(commandTabId, `\r\n\x1b[31m[错误: ${command} 命令需要SSH连接。]\x1b[0m\r\n`);
@@ -1369,8 +1369,8 @@
                 return;
             }
 
-	            // Handle rfe/myls path
-	            if ((command === 'rfe' || command === 'myls') && args.length === 0) {
+	            // Handle the remote file browser path.
+	            if (command === 'rfe' && args.length === 0) {
 	                writeToTerminalTab(commandTabId, `\r\n\x1b[36m[正在获取当前目录...]\x1b[0m\r\n`);
 	                const pathResult = await window.electronAPI.sshGetCurrentPath(commandTabId);
 	                if (pathResult.success) {
@@ -1389,7 +1389,6 @@
 	            }
 
 	            if (result.isRfeResult) renderRfeResult(result.files, result.path, commandTabId);
-	            else if (result.isMylsResult) renderMylsResult(result, commandTabId);
         }
 
 	        async function handleAiChat(fullInput, useStreaming, cmd = null, targetTabId = null) {
@@ -1895,37 +1894,6 @@
 	    });
 	    container.appendChild(view);
 	}
-	        function renderMylsResult(data, tabId = activeTabId) {
-	            if (activeTabId === tabId) showTerminal();
-	            const tabInfo = terminalTabs.get(tabId);
-	            if (!tabInfo) return;
-	            tabInfo.mylsData = data;
-	            if (activeTabId === tabId) currentMylsData = data;
-            if (tabInfo.mylsLinkProvider) tabInfo.mylsLinkProvider.dispose();
-
-            const fileRegex = new RegExp(`(${data.fileList.map(f => f.replace(/([.*+?^${}()|\[\]\/\\])/g, "\\$1")).join('|')})`, 'g');
-            tabInfo.mylsLinkProvider = tabInfo.terminal.registerLinkProvider({
-                provideLinks: (bufferLineNumber, callback) => {
-                    const line = tabInfo.terminal.buffer.active.getLine(bufferLineNumber - 1);
-                    if (!line) { callback([]); return; }
-                    const links = [];
-                    let match;
-                    while ((match = fileRegex.exec(line.translateToString())) !== null) {
-                        const filename = match[1];
-                        if (data.fileList.includes(filename)) {
-                            links.push({
-                                range: { start: { x: match.index + 1, y: bufferLineNumber }, end: { x: match.index + filename.length, y: bufferLineNumber } },
-                                text: filename,
-	                            activate: (_event, text) => handleFileClick(text, tabId)
-                            });
-                        }
-                    }
-                    callback(links);
-                }
-            });
-	            if (activeTabId === tabId) mylsLinkProvider = tabInfo.mylsLinkProvider;
-	            writeToTerminalTab(tabId, '\r\n' + data.rawOutput + '\r\n\r\n💡 \x1b[1;36m提示:\x1b[0m 点击文件名可下载并打开文件\r\n');
-        }
 
   function showTerminal() {
 	    closeAiResult(false);
@@ -2082,15 +2050,6 @@
         //    }
         //}
 
-	        async function handleFileClick(filename, targetTabId = activeTabId) {
-	            const tabInfo = terminalTabs.get(targetTabId);
-	            const data = tabInfo?.mylsData;
-            if (!data) return;
-            let fullPath = `${data.path === '/' ? '' : data.path}/${filename}`.replace('//', '/');
-	            writeToTerminalTab(targetTabId, `\r\n\x1b[32m[正在下载并打开: ${filename}...]\x1b[0m\r\n`);
-	            const result = await window.electronAPI.sshDownloadAndOpen(fullPath, targetTabId);
-	            writeToTerminalTab(targetTabId, `\r\n\x1b[${result.success ? '32m[成功' : '31m[错误'}: ${result.message || result.error}]\x1b[0m\r\n`);
-        }
 
 	        async function handleRfeClick(currentPath, filename, isDirectory, targetTabId = activeTabId) {
 	            let fullPath = `${currentPath === '/' ? '' : currentPath}/${filename}`.replace('//', '/');
@@ -3847,6 +3806,7 @@
 • Ctrl/Cmd+Shift+E: 左右分屏；加 Alt 为上下分屏
 • Ctrl/Cmd+Shift+←/→: 切换同组窗格
 • Ctrl/Cmd+Shift+F: 搜索会话
+• Ctrl/Cmd+Shift+M: 极简模式（终端 + 底部 AI 输入）
 • Ctrl/Cmd+Shift+P: 插件中心
 • Ctrl/Cmd+Shift+C/V: 复制/粘贴；选中文本后回车复制
 

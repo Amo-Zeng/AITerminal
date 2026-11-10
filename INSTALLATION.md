@@ -77,7 +77,7 @@ chmod +x ./AITerminal-*.AppImage
 | 本地终端打不开 | Windows 先直接测试 `wsl.exe -d Ubuntu --cd ~`；其他系统核对 Shell 与安装包架构。源码运行时执行 `npm run doctor` |
 | SSH 连不上 | 在配置中核对主机、端口、用户名、密码/私钥和口令；首次连接核对主机指纹 |
 | AI 不能回复 | 终端本身不需要 Key；AI 需要对应服务的地址、模型名、Key 和 API 格式，在 AI 配置中测试连接，详见 [模型 API](AI_PROVIDERS.md) |
-| `rfe` / `myls` 无结果 | 在底部命令框输入，且本标签须已连接 SSH；本地标签不提供这两个远端浏览命令 |
+| `rfe` 无结果 / `ls` 文件名无法点击 | 本标签须直连 SSH；`rfe` 在底部命令框输入。普通文件名链接匹配应用跟踪的 SSH 当前目录，全屏程序和鼠标跟踪模式不启用；其他目录或特殊文件名使用明确路径的 `rfe` |
 | Webhook 不通知 | 在 Webhook 配置中填写 HTTPS URL、启用事件并测试；程序停止通知的手动命令使用“🔔 运行并通知”，详见 [通知文档](WEBHOOKS.md) |
 | tmux 滚轮行为不符预期 | 在 tmux 配置中启用 `set -g mouse on`；鼠标事件交给 tmux 时，`Shift+右键` 仍使用本地剪贴板 |
 | 配置导出后没有 Key | 导出不包含密码、私钥口令、模型 Key 或 Webhook URL；在新环境中重新配置凭据 |

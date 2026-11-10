@@ -4,6 +4,13 @@ All notable changes to AITerminal will be documented here.
 
 ## Unreleased
 
+## 1.7.2 - 2026-11-10
+
+- 新增极简模式：隐藏顶部、侧栏、标签栏与窗格标题，仅保留终端和紧凑的底部 AI 输入区；支持 Ctrl/Cmd+Shift+M、会话切换、按需查看 AI 回复，并记住模式偏好。切换时保留分屏、连接、任务和输入草稿。
+- 移除 `myls` 特殊命令。普通 `ls` 输出中的直连 SSH 当前目录文件可直接点击下载，独立使用 SFTP 元数据，不再依赖旧命令留下的文件列表；保留 `rfe` 文件面板。
+- 文件链接按终端单元格定位，支持中文、emoji 和软换行；下载绑定原标签与 SSH 连接，切换标签不会串服，重连与目录变化会拒绝旧链接，下载反馈不写入终端。
+- 修复 SSH 根目录跟踪及延迟初始目录查询覆盖当前提示符目录的问题，避免文件链接错误地指向登录目录。
+
 ## 1.7.1 - 2026-11-10
 
 - Applied the supplied `beauty.html` design to the live workspace: cyan/indigo accents, translucent chrome, rounded terminal cards, an AI composer card, a full-height plugin dock and consistent SVG controls in dark/light themes.

@@ -80,7 +80,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     sshExecuteSpecialStreaming: (command, args, tabId) => ipcRenderer.invoke('ssh-execute-special-streaming', boundedText(command, 200), Array.isArray(args) ? args.slice(0, 100).map((arg) => boundedText(arg, 20000)) : [], resolveTabId(tabId)),
     sshGetCurrentPath: (tabId) => ipcRenderer.invoke('ssh-get-current-path', resolveTabId(tabId)),
     sshDownloadAndOpen: (remotePath, tabId) => ipcRenderer.invoke('ssh-download-and-open', remotePath, resolveTabId(tabId)),
-    sshDownloadFile: (remotePath, tabId) => ipcRenderer.invoke('ssh-download-file', remotePath, resolveTabId(tabId)),
+    sshListTerminalFiles: (tabId) => ipcRenderer.invoke('ssh-terminal-files', resolveTabId(tabId)),
+    sshDownloadFile: (remotePath, tabId, linkToken) => ipcRenderer.invoke('ssh-download-file', remotePath, resolveTabId(tabId), linkToken),
     sshDragUpload: (localPaths, tabId) => ipcRenderer.invoke('ssh-drag-upload', localPaths, resolveTabId(tabId)),
 
     // AI Testing and Streaming

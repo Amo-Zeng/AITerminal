@@ -171,6 +171,49 @@ runElectronSmoke(
     await wait(`document.getElementById('aiDock').clientHeight>${handle.height+10}`, "pointer resizes stacked AI panel");
     await evaluate(`terminalTabs.get(activeTabId).terminal.focus()`);
     await expectCursor(remaining);
+    await client.send("Emulation.setDeviceMetricsOverride", {width:1400,height:900,deviceScaleFactor:1,mobile:false});
+    await evaluate(`workspace.fit();void(window.__minimalOriginal=[...terminalTabs.values()].map(i=>i.terminal))`);
+    await delay(180);
+    const fullSize = await evaluate(`(()=>{const r=document.getElementById('workspaceCanvas').getBoundingClientRect();return {width:r.width,height:r.height}})()`);
+    const toggleMinimal = async () => {
+      const modifiers = (process.platform === 'darwin' ? 4 : 2) | 8;
+      await client.send('Input.dispatchKeyEvent', {type:'keyDown',key:'M',code:'KeyM',modifiers});
+      await client.send('Input.dispatchKeyEvent', {type:'keyUp',key:'M',code:'KeyM',modifiers});
+    };
+    await toggleMinimal();
+    await wait(`workspace.minimal&&document.body.classList.contains('minimal-mode')`);
+    await expectCursor(remaining);
+    assert.equal(await evaluate(`['.app-header','.workspace-sidebar','.workspace-toolbar','.terminal-tabs','.workbench-status','.pane-header','#pluginDock','#aiDock','.composer-caption'].every(s=>[...document.querySelectorAll(s)].every(n=>!n.getClientRects().length))`),true,'minimal mode hides all surrounding chrome');
+    assert.equal(await evaluate(`(()=>{const r=document.getElementById('workspaceCanvas').getBoundingClientRect();return r.width>${fullSize.width}&&r.height>${fullSize.height}&&r.top<=1&&r.width>=innerWidth-2&&r.height>=innerHeight-70})()`),true,'terminal occupies the window above a single compact composer');
+    for (const width of [800, 1600, 1400]) {
+      await client.send('Emulation.setDeviceMetricsOverride', {width,height:900,deviceScaleFactor:1,mobile:false});
+      await delay(180);
+      assert.equal(await evaluate(`(()=>{const r=document.getElementById('workspaceCanvas').getBoundingClientRect();return document.documentElement.scrollWidth<=innerWidth&&r.width>=innerWidth-2&&r.height>=innerHeight-70})()`),true,'minimal composer stays compact without overflow at '+width);
+    }
+    await evaluate(`commandInput.focus();commandInput.value='保留当前输入草稿'`);
+    await toggleMinimal();
+    await toggleMinimal();
+    await expectCursor(null);
+    assert.equal(await evaluate(`document.activeElement===commandInput&&commandInput.value==='保留当前输入草稿'`),true,'toggling preserves composer input and focus');
+    await evaluate(`document.getElementById('minimalAiReply').click()`);
+    await wait(`document.getElementById('aiDock').getClientRects().length>0`);
+    assert.equal(await evaluate(`document.getElementById('aiResultContent').textContent.includes('Appearance fixture')`),true);
+    assert.equal(await evaluate(`document.getElementById('workspaceCanvas').clientWidth>=innerWidth-2`),true,'AI reply overlay consumes no terminal space');
+    await evaluate(`document.getElementById('minimalAiReply').click()`);
+    const otherTab = remaining === 'tab-1' ? 'tab-2' : 'tab-1';
+    await evaluate(`(()=>{const select=document.getElementById('minimalSession');select.value='${otherTab}';select.dispatchEvent(new Event('change',{bubbles:true}));})()`);
+    await expectCursor(otherTab);
+    assert.equal(await evaluate(`activeTabId==='${otherTab}'&&document.getElementById('composerTarget').textContent===terminalTabs.get(activeTabId).title&&[...terminalTabs.values()].every((i,n)=>i.terminal===window.__minimalOriginal[n])`),true,'minimal session selection keeps AI target and original PTYs');
+    await evaluate(`document.querySelector('.input-container [data-workspace-action="minimal"]').click()`);
+    await wait(`!workspace.minimal`);
+    await delay(180);
+    await evaluate(`switchToTab('${remaining}')`);
+    await delay(180);
+    assert.deepEqual(await evaluate(`(()=>{const r=document.getElementById('workspaceCanvas').getBoundingClientRect();return {width:r.width,height:r.height}})()`),fullSize,'full layout restores exactly');
+    await toggleMinimal();
+    await client.send('Page.reload');
+    await delay(700);
+    await wait(`document.readyState==='complete'&&!!workspace&&workspace.minimal&&document.body.classList.contains('minimal-mode')`,'minimal preference survives reload');
     const png = fs.readFileSync(path.join(__dirname, "../build/icon.png"));
     assert.equal(png.readUInt32BE(16), 1024);
     assert.equal(png.readUInt32BE(20), 1024);
@@ -181,7 +224,7 @@ runElectronSmoke(
       true,
     );
     console.log(
-      "Appearance smoke ok: real xterm exclusive cursor, native window blur/restore, composer/modal blur, delayed fit, background blink requests, blink preference, move/zoom/close, themes, responsive AI dock with keyboard/pointer resize, brand asset",
+      "Appearance smoke ok: exclusive cursor, native/composer/modal focus, resize, pane lifecycle, themes, responsive AI dock, minimal mode area/focus/session routing/reply overlay/persistence, brand asset",
     );
   },
   {

@@ -14,6 +14,9 @@ window.AITerminalWorkspace = class {
     this.dragged = null;
     this.pins = new Map();
     this.pinGeneration = 0;
+    this.minimal = readStoredObject("workspacePreferences").minimal === true;
+    this.minimalAiOpen = false;
+    document.getElementById("minimalSession").addEventListener("change", event => switchToTab(event.target.value));
     document
       .getElementById("sessionSearch")
       .addEventListener("input", () => this.renderSessions());
@@ -50,9 +53,48 @@ window.AITerminalWorkspace = class {
     this.render();
     this.renderSaved();
     this.renderAssets();
+    this.setMinimal(this.minimal, false);
   }
   message(text) {
     this.status.textContent = text;
+    const compact = document.getElementById("minimalMessage");
+    compact.textContent = text;
+    clearTimeout(this.messageTimer);
+    this.messageTimer = setTimeout(() => { compact.textContent = ""; }, 6000);
+  }
+  setMinimal(enabled, persist = true) {
+    this.minimal = !!enabled;
+    this.minimalAiOpen = false;
+    document.body.classList.toggle("minimal-mode", this.minimal);
+    document.body.classList.remove("minimal-ai-open");
+    for (const button of document.querySelectorAll('[data-workspace-action="minimal"]'))
+      button.setAttribute("aria-pressed", String(this.minimal));
+    if (persist) {
+      try { localStorage.setItem("workspacePreferences", JSON.stringify({ ...readStoredObject("workspacePreferences"), minimal: this.minimal })); }
+      catch { this.message("极简模式已切换，但无法保存偏好"); }
+    }
+    this.syncMinimalControls();
+    // Hiding the toolbar must not strand keyboard focus on an invisible button.
+    // Keep terminal and composer focus intact when switching by shortcut.
+    const active = document.activeElement;
+    if (active && active !== document.body && !active.getClientRects().length) focusTerminalTab(activeTabId);
+    this.fit();
+    syncTerminalFocus();
+  }
+  syncMinimalControls() {
+    const select = document.getElementById("minimalSession");
+    const options = [...terminalTabs].map(([id, info]) => ({ id, title: info.title }));
+    if (select.options.length !== options.length || options.some((item, i) => select.options[i]?.value !== item.id || select.options[i]?.text !== item.title))
+      select.replaceChildren(...options.map(item => new Option(item.title, item.id)));
+    select.value = activeTabId;
+    const button = document.getElementById("minimalAiReply");
+    const present = !!document.getElementById("aiResultContainer");
+    if (!present) this.minimalAiOpen = false;
+    document.body.classList.toggle("minimal-ai-open", this.minimal && this.minimalAiOpen);
+    button.disabled = !present;
+    button.setAttribute("aria-expanded", String(this.minimal && this.minimalAiOpen));
+    button.textContent = this.minimalAiOpen ? "收起回复" : "AI 回复";
+    button.classList.toggle("has-reply", present);
   }
   iconize(root) {
     const paths = {
@@ -61,6 +103,7 @@ window.AITerminalWorkspace = class {
       "split-vertical":
         "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M3 12h18",
       zoom: "M8 3H3v5 M16 3h5v5 M3 16v5h5 M21 16v5h-5",
+      minimal: "M8 3H3v5 M16 3h5v5 M3 16v5h5 M21 16v5h-5 M8 12h8",
       detach: "M13 4h7v7 M20 4L10 14 M9 4H4v16h16v-5",
       files: "M3 7h7l2-3h9v16H3z",
       sidebar: "M3 4h18v16H3z M9 4v16",
@@ -298,8 +341,9 @@ window.AITerminalWorkspace = class {
               ? "本地终端"
               : status === "connecting"
                 ? "正在连接"
-                : "已断开";
+              : "已断开";
     }
+    this.syncMinimalControls();
   }
   render() {
     const focused = [...terminalTabs].find(
@@ -710,6 +754,7 @@ window.AITerminalWorkspace = class {
     const owner = terminalTabs.get(id),
       content = getTabContent(id);
     if (!owner || !content) return;
+    if (this.minimal) this.setMinimal(false);
     content.querySelector(".pane-files")?.remove();
     const panel = document.createElement("section");
     panel.className = "pane-files";
@@ -889,12 +934,14 @@ window.AITerminalWorkspace = class {
         }
       });
     }
+    this.syncMinimalControls();
     this.fit();
   }
   syncAi() {
     const present = !!document.getElementById("aiResultContainer");
     document.getElementById("aiDock").hidden = !present;
     document.getElementById("aiDivider").hidden = !present;
+    this.syncMinimalControls();
     this.fit();
   }
   action(event) {
@@ -924,6 +971,12 @@ window.AITerminalWorkspace = class {
         },
       );
     else if (action === "save") this.save();
+    else if (action === "minimal") this.setMinimal(!this.minimal);
+    else if (action === "minimal-ai") {
+      this.minimalAiOpen = !this.minimalAiOpen;
+      this.syncMinimalControls();
+      this.fit();
+    }
     else if (action === "export") this.export();
     else if (action === "import")
       document.getElementById("workspaceFile").click();
@@ -955,13 +1008,18 @@ window.AITerminalWorkspace = class {
       sshModal.style.display === "block"
     )
       return;
-    if (event.code === "KeyE") {
+    if (event.code === "KeyM" && !event.altKey) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      this.setMinimal(!this.minimal);
+    } else if (event.code === "KeyE") {
       event.preventDefault();
       event.stopImmediatePropagation();
       void this.split(event.altKey ? "vertical" : "horizontal");
     } else if (event.code === "KeyF") {
       event.preventDefault();
       event.stopImmediatePropagation();
+      if (this.minimal) this.setMinimal(false);
       document.querySelector(".app-body").classList.remove("sidebar-collapsed");
       document.getElementById("sessionSearch").focus();
     } else if (event.code === "ArrowLeft" || event.code === "ArrowRight") {

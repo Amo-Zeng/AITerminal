@@ -103,6 +103,14 @@ jobs:
         if: runner.os == 'Linux'
         run: xvfb-run -a npm run smoke:appearance
 
+      - name: Test terminal file downloads
+        if: runner.os != 'Linux'
+        run: npm run smoke:terminal-files
+
+      - name: Test terminal file downloads under Xvfb
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run smoke:terminal-files
+
       - name: Test AI control of the original terminal and nested SSH
         if: runner.os != 'Linux'
         run: npm run smoke:terminal-agent

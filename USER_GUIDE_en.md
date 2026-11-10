@@ -6,7 +6,7 @@
 
 Type shell commands such as `pwd`, `ls`, `codex` or `tmux` directly in the **terminal**. Keyboard and mouse input goes to its running program.
 
-The **bottom command/AI input** accepts questions and application commands: `cmd`, `fix`, `analyze`, `send`, `rfe`, `myls` and `search`. Bare `ls` here is treated as an AI question; use `send ls` to send it to the shell. Local terminals and SSH need no model key. AI features require [provider configuration](AI_PROVIDERS.md); offline plugins such as Terminal Pet and Ops Quest do not.
+The **bottom command/AI input** accepts questions and application commands: `cmd`, `fix`, `analyze`, `send`, `rfe` and `search`. Bare `ls` here is treated as an AI question; use `send ls` to send it to the shell. Local terminals and SSH need no model key. AI features require [provider configuration](AI_PROVIDERS.md); offline plugins such as Terminal Pet and Ops Quest do not.
 
 ## Local terminals, SSH and tabs
 
@@ -29,6 +29,12 @@ The bottom input labels its target and retains each session's draft and AI setti
 In a narrow workspace, the AI result panel moves below the terminals. Drag the divider to adjust its height, or focus it and use Up/Down; use Left/Right in the side-by-side layout. Resizing and SSH connection completion preserve focus in the AI message input.
 
 Commands currently run per session; batch execution, keystroke broadcasting and AI orchestration across sessions remain planned. There is no commercial session quota, but usable scale depends on resources. Imported layouts are validated with limits of 512 sessions, 32 nesting levels and 1 MiB. See [workspace verification](WORKSPACE_VERIFICATION.md) for measured coverage.
+
+### Minimal mode
+
+Click Minimal mode in the header or press `Ctrl/Cmd+Shift+M`. Only terminals and the compact bottom AI input remain visible; navigation, tabs, pane toolbars, status and pinned panels are hidden. The preference survives restart. Existing splits, connections, tasks, drafts and exclusive cursor focus remain intact.
+
+Use the bottom session selector to choose the input/new-task target. Takeover and Stop remain available. AI replies open on demand in a floating panel without reducing terminal dimensions. The bottom expand button or the same shortcut restores the full interface. Session search (`Ctrl/Cmd+Shift+F`) and explicitly opening an `rfe` file panel restore the full layout.
 
 ![Earlier SSH configuration and connection demo](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/ssh-connect.gif)
 
@@ -69,17 +75,19 @@ These features require SSH in the current tab and operate on the directly connec
 
 - **Upload:** drag local files from your system file manager into the terminal or bottom input. Files go to the current SSH directory. The upload button also opens a file picker.
 - **`rfe [path]`:** open an SFTP file pane below its terminal, which remains usable. Click directories to navigate, files to download and open locally, or the download arrow to choose a save location. Omitting the path queries the current remote directory. Quote paths with spaces, such as `rfe "/home/user/my logs"`. The pane's file button starts from the SSH default directory.
-- **`myls [path]`:** show a terminal file listing with clickable filenames. Clicking downloads the file and opens it in the local default application, useful for remote images or documents.
+- **Terminal `ls`:** hover a filename to match it against SFTP metadata for the directly connected SSH directory, then click to choose a download destination. Spaces, CJK, emoji and wrapped names are supported. Downloads do not write into the terminal or launch the downloaded program.
 - **Download:** the download control also accepts a remote file path. Download-and-open brings a file to your computer; it does not launch a local viewer on the remote host.
 
 Try these in the bottom input:
 
 ```text
 rfe /var/log
-myls /home/your-user/Pictures
+rfe /home/your-user/Pictures
 ```
 
 Replace the second path with an existing image/document directory on your server, then click a filename to download and open it.
+
+`myls` has been removed. File links and `rfe` use the directly connected SSH host, not nested SSH/tmux; filename links are disabled in alternate screens and mouse-tracking modes. Matching uses the directory tracked by the app: use `cd` then `ls`, or `rfe` with an explicit path for another directory. Use `rfe` for filenames containing newlines. Switching tabs preserves the download target; reconnecting or changing directory invalidates old links.
 
 Uploads use the SSH user's permissions and may overwrite same-named files. Check the destination, especially when a tmux pane's directory differs from the SSH directory tracked by the app.
 
@@ -112,6 +120,7 @@ Terminal settings include font, size, theme, cursor shape (block/underline/bar),
 | `Ctrl/Cmd+Alt+Shift+E` | Split top/bottom beside the current pane |
 | `Ctrl/Cmd+Shift+Left/Right` | Focus the previous/next pane in the split group |
 | `Ctrl/Cmd+Shift+F` | Search sessions |
+| `Ctrl/Cmd+Shift+M` | Toggle minimal mode |
 | Arrow keys / Home on a focused divider | Adjust the ratio / restore equal sizes; dragging and double-clicking also work |
 | `set -g mouse on` in tmux | Enable tmux mouse handling |
 

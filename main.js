@@ -9,6 +9,8 @@ const { Client } = require('ssh2');
 const https = require('https');
 const { decodeTerminalInput } = require('./lib/terminalInput');
 const { listRemoteFiles, withRemoteSftp } = require('./lib/remoteFiles');
+const { TerminalFileCatalog } = require('./lib/terminalFileCatalog');
+const terminalFileCatalog = new TerminalFileCatalog();
 const { TerminalScreenBroker } = require('./lib/terminalScreen');
 const { TerminalAgent } = require('./lib/terminalAgent');
 const terminalScreens = new TerminalScreenBroker();
@@ -173,6 +175,7 @@ function createTabConnectionInfo(tabId = 'tab-1') {
         sshExecutionTrust: null,
         sshConnectAttempt: null,
         currentWorkingDirectory: '/',
+        currentDirectoryTracked: false,
         // Local machine execution context (for local/hybrid AI takeover)
         localTakeoverInitialDir: null,
         localWorkingDirectory: null,
@@ -623,6 +626,7 @@ function disposeSshBackend(connectionInfo, reason = 'SSH connection closed') {
     connectionInfo.sshHostFingerprint = '';
     connectionInfo.sshExecutionTrust = null;
     connectionInfo.currentWorkingDirectory = '/';
+    connectionInfo.currentDirectoryTracked = false;
     cancelBackendLease(connectionInfo, 'sshConnectAttempt', reason);
     resetRemoteInteractiveState(connectionInfo);
 
@@ -642,6 +646,7 @@ function handleActiveSshClosed(connectionInfo, currentWindow, conn, reason = '',
     connectionInfo.sshHostFingerprint = '';
     connectionInfo.sshExecutionTrust = null;
     connectionInfo.currentWorkingDirectory = '/';
+    connectionInfo.currentDirectoryTracked = false;
     resetRemoteInteractiveState(connectionInfo);
     sendTabEvent(currentWindow, connectionInfo, 'ssh-disconnected', reason);
     try { activeStream?.end?.(); } catch {}
@@ -1234,8 +1239,9 @@ function trackDirectoryChanges(data, connectionInfo) {
                 let path = match[1].trim();
 
                 // 接受以/开头的绝对路径或~符号
-                if ((path.startsWith('/') && path.length > 1) || path === '~' || path.startsWith('~/')) {
+                if (path.startsWith('/') || path === '~' || path.startsWith('~/')) {
                     connectionInfo.currentWorkingDirectory = path;
+                    connectionInfo.currentDirectoryTracked = true;
                     console.log(`Tracked directory change to: ${path}`);
                     break;
                 }
@@ -1247,6 +1253,7 @@ function trackDirectoryChanges(data, connectionInfo) {
 // Helper function to get current working directory
 function getCurrentPath(conn, connectionInfo) {
     return new Promise((resolve, reject) => {
+        if (connectionInfo.currentDirectoryTracked && connectionInfo.currentWorkingDirectory === '/') return resolve('/');
         // 直接使用track到的目录，这是最准确的
         if (connectionInfo.currentWorkingDirectory &&
             connectionInfo.currentWorkingDirectory !== '/' &&
@@ -2353,9 +2360,9 @@ ipcMain.handle('ssh-connect', (event, config) => {
 
                 // 连接成功后，尝试获取初始目录
                 setTimeout(() => {
-                    if (!ownsTabConnection(currentWindow, connectionInfo) || connectionInfo.sshConnection !== conn || connectionInfo.aiTakeoverTarget === 'terminal') return;
+                    if (!ownsTabConnection(currentWindow, connectionInfo) || connectionInfo.sshConnection !== conn || connectionInfo.aiTakeoverTarget === 'terminal' || connectionInfo.currentDirectoryTracked) return;
                     getCurrentPathFallback(conn).then(path => {
-                        if (!ownsTabConnection(currentWindow, connectionInfo) || connectionInfo.sshConnection !== conn) return;
+                        if (!ownsTabConnection(currentWindow, connectionInfo) || connectionInfo.sshConnection !== conn || connectionInfo.currentDirectoryTracked) return;
                         connectionInfo.currentWorkingDirectory = path;
                         console.log(`Initial directory set to: ${path}`);
                     }).catch(() => {
@@ -5042,7 +5049,7 @@ ipcMain.handle('ssh-execute-special', async (event, command, args, tabId) => {
     try {
         // AI命令不需要SSH连接
         const aiCommands = ['ai', 'ask', 'fix', 'analyze', 'cmd', 'test'];
-        const sshRequiredCommands = ['rfe', 'myls'];
+        const sshRequiredCommands = ['rfe'];
 
         const connectionInfo = getWindowConnectionInfo(event, tabId);
 
@@ -5063,8 +5070,6 @@ ipcMain.handle('ssh-execute-special', async (event, command, args, tabId) => {
         switch (command) {
             case 'rfe':
                 return await handleRfe(pathArg, connectionInfo);
-            case 'myls':
-                return await handleMyls(pathArg, connectionInfo);
             case 'ai':
             case 'ask':
                 // 检查是否启用流式回复（通过参数或配置）
@@ -5092,34 +5097,6 @@ ipcMain.handle('ssh-execute-special', async (event, command, args, tabId) => {
         return { success: false, error: error.message };
     }
 });
-
-// Handler for 'myls' - provides colored, ls-like text view
-async function handleMyls(remotePath, connectionInfo) {
-    return new Promise((resolve) => {
-        const safePath = escapePath(remotePath);
-        const cmdGetOutput = `ls -la --full-time --color=always ${safePath}`;
-        const cmdGetFileList = `ls -p ${safePath}`;
-        const command = `${cmdGetOutput} && echo "---SPLIT---" && ${cmdGetFileList}`;
-
-        connectionInfo.sshConnection.exec(command, (err, stream) => {
-            if (err) return resolve({ success: false, error: err.message });
-            let output = '';
-            let errorOutput = '';
-            stream.on('data', (data) => output += data.toString('utf8'));
-            stream.stderr.on('data', (data) => errorOutput += data.toString('utf8'));
-            stream.on('close', () => {
-                if (errorOutput) return resolve({ success: false, error: errorOutput });
-                const parts = output.split('---SPLIT---');
-                if (parts.length < 2) return resolve({ success: false, error: 'Failed to parse command output.' });
-
-                const rawOutput = parts[0].trim();
-                const fileList = parts[1].trim().split('\n').filter(f => f && !f.endsWith('/'));
-
-                resolve({ success: true, isMylsResult: true, rawOutput, fileList, path: remotePath });
-            });
-        });
-    });
-}
 
 // Handler for 'rfe' - provides graphical file explorer view
 async function handleRfe(remotePath, connectionInfo) {
@@ -5669,12 +5646,28 @@ ipcMain.handle('ssh-download-and-open', async (event, remotePath, tabId) => {
     }
 });
 
-// Download file with save dialog
-ipcMain.handle('ssh-download-file', async (event, remotePath, tabId) => {
+ipcMain.handle('ssh-terminal-files', async (event, tabId) => {
+    const owner = getWindowConnectionInfo(event, tabId);
+    const connection = owner?.sshConnection;
+    const valid = () => !!connection && ownsTabConnection(getWindow(event), owner) && owner.sshConnection === connection;
+    try {
+        return await terminalFileCatalog.list(owner, { valid, load: async () => {
+            const directory = await getCurrentPath(connection, owner);
+            if (!valid()) throw new Error('SSH 会话已变化');
+            return handleRfe(directory, owner);
+        } });
+    } catch (error) { return { success: false, error: error.message }; }
+});
+
+// Download file with save dialog. Terminal links must still refer to the
+// connection/directory snapshot that produced the link before opening a dialog.
+ipcMain.handle('ssh-download-file', async (event, remotePath, tabId, linkToken) => {
     const connectionInfo = getWindowConnectionInfo(event, tabId);
     if (!connectionInfo || !connectionInfo.sshConnection) {
         return { success: false, error: 'No SSH connection' };
     }
+    if (linkToken !== undefined && !terminalFileCatalog.accepts(connectionInfo, remotePath, linkToken))
+        return { success: false, error: '文件链接已过期或 SSH 会话已变化，请重新指向文件名' };
 
     const connection = connectionInfo.sshConnection;
     const valid = () => ownsTabConnection(getWindow(event), connectionInfo) && connectionInfo.sshConnection === connection;

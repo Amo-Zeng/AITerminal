@@ -2088,7 +2088,7 @@
     <div class="container">
         <header class="app-header">
             <div class="app-brand"><img src="build/icon.svg" alt="AITerminal Logo"><strong>AITerminal</strong><span class="brand-caption">你的智能运维工作台</span></div>
-            <div class="app-header-actions"><button class="chrome-button" data-workspace-action="save" title="保存当前会话布局"><span>保存工作区</span></button><button class="chrome-button" id="openPluginCenter" data-icon="plugins" title="插件中心 (Ctrl/Cmd+Shift+P)">插件中心</button><button class="icon-button" data-workspace-action="theme" title="切换明暗主题" aria-label="切换明暗主题">◐</button><button class="icon-button" data-workspace-action="settings" title="连接、AI、通知与外观设置" aria-label="打开设置">⚙</button></div>
+            <div class="app-header-actions"><button class="chrome-button" data-workspace-action="save" title="保存当前会话布局"><span>保存工作区</span></button><button class="chrome-button" data-workspace-action="minimal" aria-pressed="false" title="极简模式 (Ctrl/Cmd+Shift+M)"><span>极简模式</span></button><button class="chrome-button" id="openPluginCenter" data-icon="plugins" title="插件中心 (Ctrl/Cmd+Shift+P)">插件中心</button><button class="icon-button" data-workspace-action="theme" title="切换明暗主题" aria-label="切换明暗主题">◐</button><button class="icon-button" data-workspace-action="settings" title="连接、AI、通知与外观设置" aria-label="打开设置">⚙</button></div>
         </header>
         <div class="app-body">
         <aside class="workspace-sidebar" aria-label="会话与工作区">
@@ -2130,7 +2130,8 @@
         <footer class="input-section">
             <div class="composer-caption"><span class="composer-label" data-icon="sparkles">AI 助手</span><span class="composer-target">发送至 <strong id="composerTarget">终端 1</strong></span><label class="ai-control-label">接管方式 <select id="aiControlMode" aria-label="AI 接管方式" title="当前终端读取此窗格并向它输入；高级模式可使用直连主机与插件服务，不保证跟随嵌套 SSH。"><option value="terminal">当前终端 · 跟随屏幕</option><option value="host">高级 · 主机与插件</option></select></label><span class="composer-hint">任务绑定提交时的窗格</span></div>
             <div class="input-container">
-                <div style="position: relative; flex: 1;">
+                <select class="minimal-only minimal-session" id="minimalSession" aria-label="当前会话与 AI 目标" title="切换会话与 AI 目标"></select>
+                <div class="composer-field" style="position: relative; flex: 1;">
                     <input type="text" class="command-input" id="commandInput" placeholder="描述你想完成的任务，或输入 / 选择命令…" aria-label="AI 消息或特殊命令">
                     <div class="command-dropdown" id="commandDropdown"></div>
                 </div>
@@ -2152,7 +2153,10 @@
                 </button>
                 <button class="btn btn-secondary" id="showTakeoverFlow" title="打开AI接管简洁流程面板">任务记录</button>
                 <button class="btn ssh-button connect" id="sshButton">🔗 连接SSH</button>
+                <button class="btn minimal-only" id="minimalAiReply" data-workspace-action="minimal-ai" aria-expanded="false" aria-controls="aiDock" disabled>AI 回复</button>
+                <button class="icon-button minimal-only" data-workspace-action="minimal" aria-pressed="false" aria-label="退出极简模式" title="退出极简模式 (Ctrl/Cmd+Shift+M)"></button>
             </div>
+            <div class="minimal-only minimal-message" id="minimalMessage" role="status" aria-live="polite"></div>
             <div class="upload-hint">📁 释放文件以上传到远程目录</div>
         </footer>
         </section>
@@ -2203,6 +2207,7 @@
         <div id="pluginStatus" class="plugin-footer" role="status" aria-live="polite"></div>
     </dialog>
     <script src="rendererStorage.js"></script>
+    <script src="lib/terminalFileLinks.js"></script>
     <script src="lib/workspaceLayout.js"></script>
     <script src="workspaceRenderer.js"></script>
     <script src="renderer.js"></script>
