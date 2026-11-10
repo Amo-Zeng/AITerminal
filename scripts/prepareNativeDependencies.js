@@ -17,7 +17,34 @@ function findNodePtySpawnHelpers(projectRoot) {
     return helpers.filter((helper) => fs.existsSync(helper) && fs.statSync(helper).isFile());
 }
 
-function prepareNativeDependencies(projectRoot = path.resolve(__dirname, '..'), platform = process.platform) {
+function prepareWindowsConpty(projectRoot, arch) {
+    const root = path.join(projectRoot, 'node_modules', 'node-pty');
+    const source = path.join(root, 'prebuilds', `win32-${arch}`, 'conpty');
+    const names = ['conpty.dll', 'OpenConsole.exe'];
+    for (const name of names) {
+        const file = path.join(source, name);
+        if (!fs.existsSync(file) || !fs.statSync(file).isFile() || !fs.statSync(file).size)
+            throw new Error(`node-pty bundled ConPTY is missing for ${arch}: ${name}`);
+    }
+    const prepared = [];
+    // electron/rebuild recreates build/Release without running node-pty's
+    // postinstall asset copy. Each compiled module loads its adjacent DLL.
+    for (const folder of ['Release', 'Debug']) {
+        const output = path.join(root, 'build', folder);
+        if (!fs.existsSync(path.join(output, 'conpty.node'))) continue;
+        const destination = path.join(output, 'conpty');
+        fs.mkdirSync(destination, { recursive: true });
+        for (const name of names) {
+            const file = path.join(destination, name);
+            fs.copyFileSync(path.join(source, name), file);
+            prepared.push(file);
+        }
+    }
+    return prepared;
+}
+
+function prepareNativeDependencies(projectRoot = path.resolve(__dirname, '..'), platform = process.platform, arch = process.arch) {
+    if (platform === 'win32') return prepareWindowsConpty(projectRoot, arch);
     if (platform !== 'darwin') return [];
     const helpers = findNodePtySpawnHelpers(projectRoot);
     if (!helpers.length) throw new Error('node-pty macOS spawn-helper was not found');
@@ -37,7 +64,7 @@ if (require.main === module) {
     try {
         const helpers = prepareNativeDependencies();
         console.log(helpers.length
-            ? `prepared ${helpers.length} node-pty macOS spawn-helper file(s)`
+            ? `prepared ${helpers.length} node-pty runtime file(s)`
             : 'native dependency permissions ok');
     } catch (error) {
         console.error(`native dependency preparation failed: ${error.message}`);

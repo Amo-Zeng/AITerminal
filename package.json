@@ -79,6 +79,7 @@
     "productName": "AITerminal",
     "appId": "com.sci-chat.aiterminal",
     "copyright": "Copyright © Amo Zeng",
+    "afterExtract": "scripts/afterExtract.js",
     "electronFuses": {
       "runAsNode": false,
       "enableCookieEncryption": true,

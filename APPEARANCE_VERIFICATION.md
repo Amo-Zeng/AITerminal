@@ -11,7 +11,7 @@
 - resize 和 SSH 连接完成回调只适配尺寸，不再延迟聚焦。移动/关闭窗格造成视图重新挂载时，仅恢复原本拥有键盘焦点的可见终端，不从 AI 输入框或弹窗夺取焦点。
 - xterm 挂在无内边距的 `.terminal-grid` 中，让 FitAddon 测量真实内容尺寸，装饰边距留在外层。原来直接测量带 padding 容器会把内边距算进列/行预算，并在 tmux/字号变化后暴露一列偏差；真实 tmux 回归保留精确恢复尺寸和字符位置断言。
 - 工作区内容宽度不超过 760px 时，AI 结果面板排列在终端下方，避免侧栏将分屏挤成几列。分隔条的鼠标拖动、方向键与无障碍方向信息随布局切换。
-- Windows 通过统一的 `lib/nodePty.js` 使用 node-pty 自带的 ConPTY，覆盖可见终端、AI 交互会话与插件 PTY。原系统 ConPTY 在终端启动/输出期间关闭时可阻塞 Electron 主进程；新实现避免该关闭路径。Windows 打包检查要求同时包含 `conpty.dll` 和 `OpenConsole.exe`。
+- Windows 通过统一的 `lib/nodePty.js` 使用 node-pty 自带的 ConPTY，覆盖可见终端、AI 交互会话与插件 PTY。原系统 ConPTY 在终端启动/输出期间关闭时可阻塞 Electron 主进程；新实现避免该关闭路径。构建在原生模块重编译之后、创建归档之前恢复相邻的运行库；Windows 打包检查要求同时包含 `conpty.dll` 和 `OpenConsole.exe`。
 
 ## 验证范围
 
@@ -25,8 +25,9 @@
 | `smoke:workspace`、`smoke:terminal-agent` | 本地与两路 SSH 分屏、DPI、拖动与会话归属；真实嵌套 SSH 和交互界面接管、手动暂停及断线撤销 |
 | `smoke:clipboard`、`smoke:config-modal`、`smoke:plugins` | 复制粘贴、回车复制、配置/Webhook 可编辑、插件安装启用与归属 |
 | `doctor`、`security:scan`、`git diff --check` | 运行资源、语法、凭据及补丁检查 |
-| Linux 本地打包与启动 | 在独立目录构建真实应用；`verify:package-source` 验证 59 个运行文件及元数据/依赖，`smoke:package-startup` 验证渲染器、本地 PTY 与插件宿主成功启动 |
+| Linux 本地打包与启动 | 在独立目录构建真实应用；`verify:package-source` 验证 60 个运行文件及元数据/依赖，`smoke:package-startup` 验证渲染器、本地 PTY 与插件宿主成功启动 |
 | 原生 Windows 验证 | 光标检查连续三轮通过；工作区/SSH 焦点与 AI 屏幕接管通过；真实 Windows → WSL Ubuntu 验证目录、AI 执行、插件读写、Unicode、交互输入和 resize；原生 PTY 输出与退出通过 |
+| 构建钩子回归 | 用临时目录模拟重编译清理后的目录，验证匹配架构的 ConPTY 运行文件补齐、原生模块保持原样、缺失或错误架构被拒绝；正式 Windows 构建仍执行原生模块重编译 |
 | 截图 | [深色](assets/workspace-dark.png)、[浅色](assets/workspace-light.png)、[插件中心](assets/plugin-center.png)，均由实际应用生成 |
 
 没有用原型中的假终端内容替代后端；没有把原型中三个同时闪烁的 CSS 光标带入产品。新外观不代表内存或持续高吞吐已经完成优化，性能验证限制仍见 [工作区记录](WORKSPACE_VERIFICATION.md)。

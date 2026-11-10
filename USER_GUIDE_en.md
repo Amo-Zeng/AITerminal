@@ -26,6 +26,8 @@ Save workspace stores the layout locally; Export layout writes JSON and Import l
 
 The bottom input labels its target and retains each session's draft and AI settings. The AI sidebar follows focus and can be resized. Pin a plugin panel to keep it visible with its original session ownership. Restoring a panel reference does not install/enable plugins or resume tasks; the user's existing defaults for new tabs still apply.
 
+In a narrow workspace, the AI result panel moves below the terminals. Drag the divider to adjust its height, or focus it and use Up/Down; use Left/Right in the side-by-side layout. Resizing and SSH connection completion preserve focus in the AI message input.
+
 Commands currently run per session; batch execution, keystroke broadcasting and AI orchestration across sessions remain planned. There is no commercial session quota, but usable scale depends on resources. Imported layouts are validated with limits of 512 sessions, 32 nesting levels and 1 MiB. See [workspace verification](WORKSPACE_VERIFICATION.md) for measured coverage.
 
 ![Earlier SSH configuration and connection demo](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/ssh-connect.gif)
