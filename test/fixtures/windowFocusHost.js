@@ -7,12 +7,21 @@ const profile = process.env.AITERMINAL_SMOKE_USER_DATA;
 if (!profile || process.env.AITERMINAL_CLIPBOARD_SMOKE !== "1")
   throw new Error("Isolated smoke profile required");
 const control = path.join(profile, "window-focus-control");
-let owner, other;
+let owner, other, menuTimer;
 app.on("browser-window-created", (_event, win) => {
   if (!owner) owner = win;
 });
 require("../../main");
 app.whenReady().then(() => {
+  let previousMenuState;
+  menuTimer = setInterval(() => {
+    if (!owner || owner.isDestroyed() || process.platform === 'darwin') return;
+    const state = JSON.stringify({ visible: owner.isMenuBarVisible(), autoHide: owner.isMenuBarAutoHide() });
+    if (state !== previousMenuState) {
+      fs.writeFileSync(path.join(profile, 'window-menu-state.json'), state);
+      previousMenuState = state;
+    }
+  }, 50);
   fs.watchFile(control, { interval: 50 }, async () => {
     const action = fs.readFileSync(control, "utf8");
     if (action === "away" && !other) {
@@ -37,4 +46,4 @@ app.whenReady().then(() => {
     }
   });
 });
-app.on("will-quit", () => fs.unwatchFile(control));
+app.on("will-quit", () => { fs.unwatchFile(control); clearInterval(menuTimer); });

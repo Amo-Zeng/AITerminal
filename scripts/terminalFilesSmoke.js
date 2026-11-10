@@ -1,7 +1,6 @@
 'use strict';
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const os = require('node:os');
 const path = require('node:path');
 const { runElectronSmoke } = require('./clipboardSmoke');
 const { createWorkspaceSshServer } = require('../test/fixtures/workspaceSshServer');
@@ -9,11 +8,12 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 async function main() {
     const name = '中文😀 report.txt';
-    const first = await createWorkspaceSshServer('FILES', { [name]: 'ALPHA file bytes 中文', 'other.txt': 'other' });
+    let releaseRead;
+    const readGate = new Promise(resolve => { releaseRead = resolve; });
+    const first = await createWorkspaceSshServer('FILES', { [name]: 'ALPHA file bytes 中文', 'other.txt': 'other', 'script.sh': 'exit 0' }, { beforeFileRead: () => readGate });
     const second = await createWorkspaceSshServer('OTHER', { [name]: 'BETA different file' });
-    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ait-file-links-'));
-    const destination = path.join(directory, 'download.txt');
-    let control, dialogs;
+    let control, dialogs, openedFiles, warnings;
+    const opened = () => fs.existsSync(openedFiles) ? fs.readFileSync(openedFiles, 'utf8').trim().split('\n').map(line => JSON.parse(line)) : [];
     try {
         await runElectronSmoke(async ({ evaluate, client }) => {
             const wait = async (predicate, label) => {
@@ -28,8 +28,8 @@ async function main() {
             await evaluate(`switchToTab('tab-1');electronAPI.sshSendRaw(${JSON.stringify('ls\r')},'tab-1')`);
             await wait(() => evaluate(`terminalTabs.get('tab-1').terminal.buffer.active.getLine(0)?.translateToString().includes(${JSON.stringify(name)})`), 'ls output');
             const before = await evaluate(`terminalTabs.get('tab-1').terminal.buffer.active.getLine(0).translateToString()`);
-            // Real xterm linkifier + mouse click; the native save dialog fixture
-            // supplies a temporary path, while SSH/SFTP and disk transfer are real.
+            // Real xterm mouse click, production IPC and SFTP transfer. Only the
+            // OS viewer launch is intercepted to inspect the actual local file.
             await evaluate(`document.fonts.ready.then(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))))`);
             const point = await evaluate(`(()=>{const t=terminalTabs.get('tab-1').terminal,r=t.element.querySelector('.xterm-screen').getBoundingClientRect();return {x:r.x+r.width/t.cols/2,y:r.y+r.height/t.rows/2}})()`);
             await client.send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...point });
@@ -38,14 +38,17 @@ async function main() {
             } catch (error) {
                 throw new Error(error.message + '\n' + JSON.stringify(await evaluate(`(async()=>({listing:await electronAPI.sshListTerminalFiles('tab-1'),line:AITerminalFileLinks.readLogicalLine(terminalTabs.get('tab-1').terminal,1)?.text,title:terminalTabs.get('tab-1').terminal.element.title,mode:terminalTabs.get('tab-1').terminal.modes.mouseTrackingMode}))()`)));
             }
-            fs.writeFileSync(control, JSON.stringify({ destination, hold: true }));
             await client.send('Input.dispatchMouseEvent', { type: 'mousePressed', button: 'left', clickCount: 1, ...point });
             await client.send('Input.dispatchMouseEvent', { type: 'mouseReleased', button: 'left', clickCount: 1, ...point });
-            await wait(() => fs.existsSync(dialogs), 'download save dialog');
+            await wait(() => first.downloads.length === 1, 'file transfer begins without a save dialog');
+            assert.equal(opened().length, 0, 'viewer cannot open before transfer completes');
             await evaluate(`switchToTab('tab-2')`);
-            fs.writeFileSync(control, JSON.stringify({ destination, hold: false }));
-            await wait(() => fs.existsSync(destination) && fs.statSync(destination).size === Buffer.byteLength('ALPHA file bytes 中文'), 'complete download');
-            assert.equal(fs.readFileSync(destination, 'utf8'), 'ALPHA file bytes 中文');
+            releaseRead();
+            await wait(() => opened().length === 1, 'default viewer receives the completed file');
+            assert.equal(Buffer.from(opened()[0].bytes, 'base64').toString('utf8'), 'ALPHA file bytes 中文');
+            assert.ok(opened()[0].file.endsWith(name), 'temporary file preserves its extension and Unicode name');
+            assert.equal(fs.existsSync(dialogs), false, 'clicking an ls file opens directly without a save dialog');
+            assert.equal(fs.existsSync(warnings), false, 'ordinary text file needs no extra confirmation');
             assert.deepEqual(first.downloads, ['/fixture/' + name]);
             assert.deepEqual(second.downloads, []);
             assert.equal(await evaluate(`terminalTabs.get('tab-1').terminal.buffer.active.getLine(0).translateToString()`), before, 'download does not corrupt terminal output');
@@ -60,24 +63,35 @@ async function main() {
             assert.deepEqual(wideWrap, [{start:{x:10,y:1},end:{x:8,y:2}}], 'wide glyph wrapping past the last column does not insert a filename space');
             const snapshot = await evaluate(`electronAPI.sshListTerminalFiles('tab-1')`);
             assert.equal(snapshot.success, true);
+            const cancelled = await evaluate(`electronAPI.sshDownloadAndOpen('/fixture/script.sh','tab-1',${JSON.stringify(snapshot.token)})`);
+            assert.equal(cancelled.success, false, 'executable file still requires the existing confirmation');
+            assert.equal(first.downloads.length, 1, 'cancelled executable is not downloaded or opened');
+            assert.equal(fs.readFileSync(warnings, 'utf8').trim().split('\n').length, 1);
+            fs.writeFileSync(control, JSON.stringify({ openError: 'No associated viewer' }));
+            const noViewer = await evaluate(`electronAPI.sshDownloadAndOpen('/fixture/other.txt','tab-1',${JSON.stringify(snapshot.token)})`);
+            assert.equal(noViewer.success, false, 'OS viewer failure is not reported as success');
+            assert.match(noViewer.error, /No associated viewer/);
+            assert.equal(Buffer.from(opened()[1].bytes, 'base64').toString('utf8'), 'other');
             await evaluate(`electronAPI.sshSendRaw(${JSON.stringify('cd /\r')},'tab-1')`);
             await wait(() => evaluate(`electronAPI.sshGetCurrentPath('tab-1').then(r=>r.path==='/')`), 'root directory is tracked instead of the login home');
-            const moved = await evaluate(`electronAPI.sshDownloadFile(${JSON.stringify('/fixture/' + name)},'tab-1',${JSON.stringify(snapshot.token)})`);
+            const moved = await evaluate(`electronAPI.sshDownloadAndOpen(${JSON.stringify('/fixture/' + name)},'tab-1',${JSON.stringify(snapshot.token)})`);
             assert.equal(moved.success, false, 'directory change rejects old file links');
             await evaluate(`electronAPI.sshDisconnect('tab-1')`);
             assert.equal(await evaluate(`autoConnectSSH(${JSON.stringify(second.config)},'tab-1')`), true);
-            const stale = await evaluate(`electronAPI.sshDownloadFile(${JSON.stringify('/fixture/' + name)},'tab-1',${JSON.stringify(snapshot.token)})`);
+            const stale = await evaluate(`electronAPI.sshDownloadAndOpen(${JSON.stringify('/fixture/' + name)},'tab-1',${JSON.stringify(snapshot.token)})`);
             assert.equal(stale.success, false, 'reconnect rejects old download link');
-            assert.equal(fs.readFileSync(dialogs, 'utf8').trim().split('\n').length, 1);
-            console.log('Terminal file links smoke ok: ordinary ls, real mouse download, Unicode/wrapped cell ranges, SFTP bytes, tab ownership, reconnect rejection, no terminal output injection');
+            assert.equal(opened().length, 2, 'expired links never launch the viewer');
+            assert.equal(fs.existsSync(dialogs), false);
+            console.log('Terminal file links smoke ok: ordinary ls mouse click opens completed SFTP file in default viewer, no save dialog, Unicode/wrapped cells, tab ownership, stale links, executable confirmation, viewer errors, no terminal output injection');
         }, {
-            entry: path.join(__dirname, '../test/fixtures/fileDownloadHost.js'),
+            entry: path.join(__dirname, '../test/fixtures/fileOpenHost.js'),
             prepareProfile(profile) {
-                control = path.join(profile, 'download-control.json'); dialogs = path.join(profile, 'download-dialogs.jsonl');
-                fs.writeFileSync(control, JSON.stringify({ destination, hold: false }));
+                control = path.join(profile, 'open-control.json'); dialogs = path.join(profile, 'save-dialogs.jsonl');
+                openedFiles = path.join(profile, 'opened-files.jsonl'); warnings = path.join(profile, 'warning-dialogs.jsonl');
+                fs.writeFileSync(control, JSON.stringify({}));
                 fs.writeFileSync(path.join(profile, 'known_hosts'), first.knownHosts + second.knownHosts);
             },
         });
-    } finally { await first.close(); await second.close(); fs.rmSync(directory, { recursive: true, force: true }); }
+    } finally { releaseRead(); await first.close(); await second.close(); }
 }
 main().catch(error => { console.error(error.stack); process.exitCode = 1; });

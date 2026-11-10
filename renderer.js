@@ -721,7 +721,7 @@
                 enabled: () => ownsTerminalTab(tabId, terminalTabs.get(tabId)) &&
                     terminalTabs.get(tabId)?.terminal === newTerm && canSendToSsh(tabId),
                 load: () => window.electronAPI.sshListTerminalFiles(tabId),
-                download: (file) => window.electronAPI.sshDownloadFile(file.path, tabId, file.token),
+                open: (file) => window.electronAPI.sshDownloadAndOpen(file.path, tabId, file.token),
                 message: text => workspace?.message(text),
             });
             // Establish the real size before spawning the PTY, and coalesce

@@ -1,6 +1,6 @@
 {
   "name": "aiterminal",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "description": "AI驱动的智能终端 - 支持本地终端与SSH远程管理",
   "main": "main.js",
   "scripts": {

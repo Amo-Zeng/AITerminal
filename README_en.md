@@ -24,13 +24,13 @@ Notifications require the app to remain running; a disconnected remote process h
 
 ## Demos
 
-**Workspace and minimal mode:** cyan/indigo accents and rounded terminal cards, with independent terminals and a plugin panel pinned to its session. Version 1.7.2 adds minimal mode (`Ctrl/Cmd+Shift+M`): terminals and a compact AI input, with session switching, replies on demand and a saved preference. Only the pane with actual keyboard focus displays a terminal cursor; composing AI messages, opening dialogs or switching away from the app stops terminal blinking. These are real application screenshots showing local tests and plugin example validation.
+**Workspace and minimal mode:** cyan/indigo accents and rounded terminal cards, with independent terminals and a plugin panel pinned to its session. Minimal mode (`Ctrl/Cmd+Shift+M`) keeps the top tabs, terminals and a compact bottom AI input, while hiding menus and the sidebar. Click a top tab to switch sessions; AI replies open on demand and the mode preference is saved. Only the pane with actual keyboard focus displays a terminal cursor; composing AI messages, opening dialogs or switching away from the app stops terminal blinking. These are real application screenshots showing local tests and plugin example validation.
 
 ![Dark workspace with three independent terminals and a pinned Terminal Pet panel](assets/workspace-dark.png)
 
-**Minimal mode:** keep your splits and connections, with terminals and the bottom AI input filling the window.
+**Minimal mode:** keep your splits and connections, switch sessions with the top tabs and enter AI tasks below the terminals.
 
-![Minimal mode: full-area terminals with a compact session selector and AI input](assets/workspace-minimal.png)
+![Minimal mode: top tabs, terminals and the bottom AI input](assets/workspace-minimal.png)
 
 <details>
 <summary>Light appearance</summary>
@@ -75,7 +75,7 @@ These recordings from earlier versions show the application in use. The current 
 - Native multi-session workspaces: split local and different SSH terminals horizontally or vertically, resize/rearrange/zoom panes, search sessions and save/import/export layouts, without a commercial session quota.
 - Local and SSH terminals with real PTY support for Codex, Vim, tmux and other interactive tools.
 - AI chat, `fix` diagnostics, `analyze` system analysis and `cmd` natural-language commands; streaming replies, split views, Markdown, code highlighting, math rendering and custom answer requirements.
-- Password/key SSH login, drag-and-drop uploads and `rfe` remote browsing/downloads. Filenames in ordinary `ls` output that match the directly connected SSH directory can be clicked to download. Use `send` for shell commands and `/` for saved commands.
+- Password/key SSH login, drag-and-drop uploads and `rfe` remote browsing/downloads. Click a filename in ordinary `ls` output matching the directly connected SSH directory to open a temporary local copy in your default application, without choosing a save location. Use `send` for shell commands and `/` for saved commands.
 - Configuration profiles, session configuration import/export, remembered authentication, automatic login and startup commands; configurable themes, fonts, cursor and scrollback.
 - Independent connections, AI settings/history, execution state, output, plugins and terminal dimensions for every tab.
 - AI operations on local, remote or mixed targets; confirmation before recognized high-risk commands, with optional trust for a verified SSH server identity.
@@ -97,7 +97,7 @@ Enter these in the bottom command/AI input. Typing inside the terminal goes dire
 | `fix` / `analyze` | Diagnose/analyze the current text screen; suggest additional checks when metrics are missing |
 | `send ls -lah` | Send a command to this tab's local or SSH shell, without a model key |
 | `/` | Search saved commands, select one and press Enter to send |
-| `rfe /var/log` | Browse/download SSH files or download and open them locally; filenames in terminal `ls` output can also be clicked to download |
+| `rfe /var/log` | Browse/download SSH files or download and open them locally; click filenames in terminal `ls` output to open them directly |
 | `search keyword` | Search this tab's advanced takeover history index |
 | AI takeover / Plugin Center / Run and notify | Multi-step tasks, plugin tools and program-exit notifications |
 | Horizontal/vertical split / Save workspace | Show independent terminals together and save their layout; reopening creates new sessions and requires manual SSH reconnection |
@@ -106,7 +106,7 @@ See the [user guide](USER_GUIDE_en.md) for detailed instructions, shortcuts and 
 
 ## Install
 
-Download an **AITerminal** package from the [latest release](https://github.com/Amo-Zeng/AITerminal/releases/latest) and verify `SHA256SUMS.txt`. **1.7.2** adds minimal mode and makes filename download links independent of the removed `myls` command. Light/dark themes, native splits, workspaces, plugins, nested SSH control and automatic Release publishing remain available.
+Download an **AITerminal** package from the [latest release](https://github.com/Amo-Zeng/AITerminal/releases/latest) and verify `SHA256SUMS.txt`. **1.7.3** restores direct opening of files clicked in `ls` output and keeps the top tabs in minimal mode, removing the bottom session selector. Light/dark themes, native splits, workspaces, plugins, nested SSH control and automatic Release publishing remain available.
 
 | Platform | Package | Requirements |
 | --- | --- | --- |

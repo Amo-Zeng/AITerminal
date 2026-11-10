@@ -16,7 +16,6 @@ window.AITerminalWorkspace = class {
     this.pinGeneration = 0;
     this.minimal = readStoredObject("workspacePreferences").minimal === true;
     this.minimalAiOpen = false;
-    document.getElementById("minimalSession").addEventListener("change", event => switchToTab(event.target.value));
     document
       .getElementById("sessionSearch")
       .addEventListener("input", () => this.renderSessions());
@@ -67,6 +66,7 @@ window.AITerminalWorkspace = class {
     this.minimalAiOpen = false;
     document.body.classList.toggle("minimal-mode", this.minimal);
     document.body.classList.remove("minimal-ai-open");
+    window.electronAPI.setWindowMinimalMode(this.minimal).catch(() => this.message("系统菜单切换失败，请重试"));
     for (const button of document.querySelectorAll('[data-workspace-action="minimal"]'))
       button.setAttribute("aria-pressed", String(this.minimal));
     if (persist) {
@@ -82,11 +82,6 @@ window.AITerminalWorkspace = class {
     syncTerminalFocus();
   }
   syncMinimalControls() {
-    const select = document.getElementById("minimalSession");
-    const options = [...terminalTabs].map(([id, info]) => ({ id, title: info.title }));
-    if (select.options.length !== options.length || options.some((item, i) => select.options[i]?.value !== item.id || select.options[i]?.text !== item.title))
-      select.replaceChildren(...options.map(item => new Option(item.title, item.id)));
-    select.value = activeTabId;
     const button = document.getElementById("minimalAiReply");
     const present = !!document.getElementById("aiResultContainer");
     if (!present) this.minimalAiOpen = false;

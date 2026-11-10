@@ -8,7 +8,7 @@ const {
 
 // A real loopback SSH/SFTP transport with a deterministic echo shell. It never
 // executes received commands on the machine running tests.
-async function createWorkspaceSshServer(name, fileContents = null) {
+async function createWorkspaceSshServer(name, fileContents = null, { beforeFileRead } = {}) {
   const key = utils.generateKeyPairSync("ed25519").private;
   const password = crypto.randomBytes(16).toString("hex");
   const clients = new Set(),
@@ -78,11 +78,16 @@ async function createWorkspaceSshServer(name, fileContents = null) {
               const data = fileHandles.get(handle.toString('hex'));
               if (data) channel.attrs(id, attrs(data.length)); else channel.status(id, 2);
             });
-            channel.on('READ', (id, handle, offset, length) => {
+            channel.on('READ', async (id, handle, offset, length) => {
               const data = fileHandles.get(handle.toString('hex'));
               if (!data) return channel.status(id, 2);
               if (offset >= data.length) return channel.status(id, 1);
-              channel.data(id, data.subarray(offset, offset + length));
+              try {
+                await beforeFileRead?.();
+                channel.data(id, data.subarray(offset, offset + length));
+              } catch {
+                if (!channel.destroyed) channel.status(id, 4);
+              }
             });
           }
           channel.on("REALPATH", (reqid, value) =>

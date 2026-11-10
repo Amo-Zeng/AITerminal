@@ -32,9 +32,11 @@ Commands currently run per session; batch execution, keystroke broadcasting and 
 
 ### Minimal mode
 
-Click Minimal mode in the header or press `Ctrl/Cmd+Shift+M`. Only terminals and the compact bottom AI input remain visible; navigation, tabs, pane toolbars, status and pinned panels are hidden. The preference survives restart. Existing splits, connections, tasks, drafts and exclusive cursor focus remain intact.
+Click Minimal mode in the header or press `Ctrl/Cmd+Shift+M`. The top tabs, terminals and compact bottom AI input remain visible; header menus, the sidebar, pane toolbars, status and pinned panels are hidden. The preference survives restart. Existing splits, connections, tasks, drafts and exclusive cursor focus remain intact.
 
-Use the bottom session selector to choose the input/new-task target. Takeover and Stop remain available. AI replies open on demand in a floating panel without reducing terminal dimensions. The bottom expand button or the same shortcut restores the full interface. Session search (`Ctrl/Cmd+Shift+F`) and explicitly opening an `rfe` file panel restore the full layout.
+Click a top tab to switch sessions and choose the terminal input/new-task target. The tab bar retains its new/close controls; there is no bottom session selector. Takeover and Stop remain available. AI replies open on demand in a floating panel without reducing terminal dimensions. The bottom expand button or the same shortcut restores the full interface. Session search (`Ctrl/Cmd+Shift+F`) and explicitly opening an `rfe` file panel restore the full layout.
+
+On Windows/Linux, minimal mode also hides the native menu bar and restores it when you exit. The macOS system menu remains unchanged.
 
 ![Earlier SSH configuration and connection demo](https://raw.githubusercontent.com/Amo-Zeng/AITerminal/d586885dc0a4c94cc4d5543da8052aaea4209949/assets/ssh-connect.gif)
 
@@ -75,7 +77,7 @@ These features require SSH in the current tab and operate on the directly connec
 
 - **Upload:** drag local files from your system file manager into the terminal or bottom input. Files go to the current SSH directory. The upload button also opens a file picker.
 - **`rfe [path]`:** open an SFTP file pane below its terminal, which remains usable. Click directories to navigate, files to download and open locally, or the download arrow to choose a save location. Omitting the path queries the current remote directory. Quote paths with spaces, such as `rfe "/home/user/my logs"`. The pane's file button starts from the SSH default directory.
-- **Terminal `ls`:** hover a filename to match it against SFTP metadata for the directly connected SSH directory, then click to choose a download destination. Spaces, CJK, emoji and wrapped names are supported. Downloads do not write into the terminal or launch the downloaded program.
+- **Terminal `ls`:** click a filename matching the directly connected SSH directory to fetch a temporary local copy and open it in your default application, without a save dialog. Spaces, CJK, emoji and wrapped names are supported. Downloads do not write into the terminal. Executable files retain the existing opening confirmation; use the download arrow in `rfe` if you only want to save a file.
 - **Download:** the download control also accepts a remote file path. Download-and-open brings a file to your computer; it does not launch a local viewer on the remote host.
 
 Try these in the bottom input:

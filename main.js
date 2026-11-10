@@ -516,6 +516,25 @@ function getWindowForConnectionInfo(connectionInfo) {
     return windowId ? windows.get(windowId) || null : null;
 }
 
+const windowMenuStates = new WeakMap();
+ipcMain.handle('window-minimal-mode', (event, enabled) => {
+    const win = getWindow(event);
+    if (!win || win.isDestroyed() || !windows.has(win.id) || typeof enabled !== 'boolean') return { success: false };
+    // macOS uses a system-wide menu outside the application content area.
+    if (process.platform === 'darwin') return { success: true };
+    if (enabled) {
+        if (!windowMenuStates.has(win)) windowMenuStates.set(win, { visible: win.isMenuBarVisible(), autoHide: win.isMenuBarAutoHide() });
+        win.setAutoHideMenuBar(true);
+        win.setMenuBarVisibility(false);
+    } else if (windowMenuStates.has(win)) {
+        const original = windowMenuStates.get(win);
+        win.setAutoHideMenuBar(original.autoHide);
+        win.setMenuBarVisibility(original.visible);
+        windowMenuStates.delete(win);
+    }
+    return { success: true };
+});
+
 function queueWebhookEvent(connectionInfo, event, data = {}, capturedState = null) {
     const state = capturedState || getWindowStateForConnectionInfo(connectionInfo);
     const config = state?.webhookConfig;
@@ -5597,11 +5616,14 @@ async function handleAiTestCommand(connectionInfo = null, configOverride = null)
 }
 
 // Download and open file
-ipcMain.handle('ssh-download-and-open', async (event, remotePath, tabId) => {
+ipcMain.handle('ssh-download-and-open', async (event, remotePath, tabId, linkToken) => {
     const connectionInfo = getWindowConnectionInfo(event, tabId);
     if (!connectionInfo || !connectionInfo.sshConnection) {
         return { success: false, error: 'No SSH connection' };
     }
+
+    if (linkToken !== undefined && !terminalFileCatalog.accepts(connectionInfo, remotePath, linkToken))
+        return { success: false, error: '文件链接已过期或 SSH 会话已变化，请重新指向文件名' };
 
     const connection = connectionInfo.sshConnection;
     const valid = () => ownsTabConnection(getWindow(event), connectionInfo) && connectionInfo.sshConnection === connection;

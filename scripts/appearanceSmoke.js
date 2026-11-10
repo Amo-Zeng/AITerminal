@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { runElectronSmoke } = require("./clipboardSmoke");
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-let control;
+let control, menuState;
 
 runElectronSmoke(
   async ({ evaluate, client }) => {
@@ -180,15 +180,28 @@ runElectronSmoke(
       await client.send('Input.dispatchKeyEvent', {type:'keyDown',key:'M',code:'KeyM',modifiers});
       await client.send('Input.dispatchKeyEvent', {type:'keyUp',key:'M',code:'KeyM',modifiers});
     };
+    const expectMenu = async visible => {
+      if (process.platform === 'darwin') return;
+      const end = Date.now() + 5000;
+      while (Date.now() < end) {
+        try { if (JSON.parse(fs.readFileSync(menuState, 'utf8')).visible === visible) return; } catch {}
+        await delay(60);
+      }
+      assert.fail('native menu visibility did not become '+visible);
+    };
     await toggleMinimal();
     await wait(`workspace.minimal&&document.body.classList.contains('minimal-mode')`);
+    await expectMenu(false);
     await expectCursor(remaining);
-    assert.equal(await evaluate(`['.app-header','.workspace-sidebar','.workspace-toolbar','.terminal-tabs','.workbench-status','.pane-header','#pluginDock','#aiDock','.composer-caption'].every(s=>[...document.querySelectorAll(s)].every(n=>!n.getClientRects().length))`),true,'minimal mode hides all surrounding chrome');
-    assert.equal(await evaluate(`(()=>{const r=document.getElementById('workspaceCanvas').getBoundingClientRect();return r.width>${fullSize.width}&&r.height>${fullSize.height}&&r.top<=1&&r.width>=innerWidth-2&&r.height>=innerHeight-70})()`),true,'terminal occupies the window above a single compact composer');
+    assert.equal(await evaluate(`['.app-header','.workspace-sidebar','.workspace-toolbar','.workbench-status','.pane-header','#pluginDock','#aiDock','.composer-caption'].every(s=>[...document.querySelectorAll(s)].every(n=>!n.getClientRects().length))`),true,'minimal mode hides menus and surrounding panels');
+    assert.equal(await evaluate(`!document.getElementById('minimalSession')`),true,'no bottom session selector');
+    const compactLayout = `(()=>{const r=document.getElementById('workspaceCanvas').getBoundingClientRect(),tabs=document.getElementById('terminalTabs').getBoundingClientRect(),footer=document.querySelector('.input-section').getBoundingClientRect();return tabs.top<=1&&tabs.height>0&&tabs.height<=40&&Math.abs(r.top-tabs.bottom)<=1&&r.width>=innerWidth-2&&Math.abs(r.bottom-footer.top)<=1&&footer.height<=70&&document.documentElement.scrollWidth<=innerWidth})()`;
+    assert.equal(await evaluate(compactLayout),true,'terminal fills the window between the top tabs and compact composer');
+    assert.equal(await evaluate(`(()=>{const r=document.getElementById('workspaceCanvas').getBoundingClientRect();return r.width>${fullSize.width}&&r.height>${fullSize.height}})()`),true,'minimal mode increases terminal area');
     for (const width of [800, 1600, 1400]) {
       await client.send('Emulation.setDeviceMetricsOverride', {width,height:900,deviceScaleFactor:1,mobile:false});
       await delay(180);
-      assert.equal(await evaluate(`(()=>{const r=document.getElementById('workspaceCanvas').getBoundingClientRect();return document.documentElement.scrollWidth<=innerWidth&&r.width>=innerWidth-2&&r.height>=innerHeight-70})()`),true,'minimal composer stays compact without overflow at '+width);
+      assert.equal(await evaluate(compactLayout),true,'minimal tabs and composer stay compact without overflow at '+width);
     }
     await evaluate(`commandInput.focus();commandInput.value='保留当前输入草稿'`);
     await toggleMinimal();
@@ -201,11 +214,14 @@ runElectronSmoke(
     assert.equal(await evaluate(`document.getElementById('workspaceCanvas').clientWidth>=innerWidth-2`),true,'AI reply overlay consumes no terminal space');
     await evaluate(`document.getElementById('minimalAiReply').click()`);
     const otherTab = remaining === 'tab-1' ? 'tab-2' : 'tab-1';
-    await evaluate(`(()=>{const select=document.getElementById('minimalSession');select.value='${otherTab}';select.dispatchEvent(new Event('change',{bubbles:true}));})()`);
+    const tabPoint = await evaluate(`(()=>{const r=getTabButton('${otherTab}').querySelector('.terminal-tab-title').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
+    await client.send('Input.dispatchMouseEvent', {type:'mousePressed',button:'left',clickCount:1,...tabPoint});
+    await client.send('Input.dispatchMouseEvent', {type:'mouseReleased',button:'left',clickCount:1,...tabPoint});
     await expectCursor(otherTab);
-    assert.equal(await evaluate(`activeTabId==='${otherTab}'&&document.getElementById('composerTarget').textContent===terminalTabs.get(activeTabId).title&&[...terminalTabs.values()].every((i,n)=>i.terminal===window.__minimalOriginal[n])`),true,'minimal session selection keeps AI target and original PTYs');
+    assert.equal(await evaluate(`activeTabId==='${otherTab}'&&getTabButton('${otherTab}').classList.contains('active')&&document.getElementById('composerTarget').textContent===terminalTabs.get(activeTabId).title&&[...terminalTabs.values()].every((i,n)=>i.terminal===window.__minimalOriginal[n])`),true,'top tab mouse click switches the AI target and focus while retaining PTYs');
     await evaluate(`document.querySelector('.input-container [data-workspace-action="minimal"]').click()`);
     await wait(`!workspace.minimal`);
+    await expectMenu(true);
     await delay(180);
     await evaluate(`switchToTab('${remaining}')`);
     await delay(180);
@@ -214,6 +230,7 @@ runElectronSmoke(
     await client.send('Page.reload');
     await delay(700);
     await wait(`document.readyState==='complete'&&!!workspace&&workspace.minimal&&document.body.classList.contains('minimal-mode')`,'minimal preference survives reload');
+    await expectMenu(false);
     const png = fs.readFileSync(path.join(__dirname, "../build/icon.png"));
     assert.equal(png.readUInt32BE(16), 1024);
     assert.equal(png.readUInt32BE(20), 1024);
@@ -232,6 +249,7 @@ runElectronSmoke(
     entry: path.join(__dirname, "../test/fixtures/windowFocusHost.js"),
     prepareProfile(profile) {
       control = path.join(profile, "window-focus-control");
+      menuState = path.join(profile, "window-menu-state.json");
       fs.writeFileSync(control, "ready");
     },
   },

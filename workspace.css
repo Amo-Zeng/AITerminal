@@ -1254,7 +1254,6 @@ input:focus-visible,
 body.minimal-mode .app-header,
 body.minimal-mode .workspace-sidebar,
 body.minimal-mode .workspace-toolbar,
-body.minimal-mode .terminal-tabs,
 body.minimal-mode .workbench-status,
 body.minimal-mode .pane-header,
 body.minimal-mode .pane-files,
@@ -1268,6 +1267,7 @@ body.minimal-mode #sshButton {
   display: none !important;
 }
 body.minimal-mode .workspace-main { padding: 0; }
+body.minimal-mode .terminal-tabs { border-radius: 0; }
 body.minimal-mode .workbench { border: 0; border-radius: 0; position: relative; }
 body.minimal-mode .terminal-content-area { padding: 0; }
 body.minimal-mode .terminal-tab-content { border-radius: 0; }
@@ -1277,7 +1277,6 @@ body.minimal-mode .input-section { margin: 0; padding: 6px 8px; border-radius: 0
 body.minimal-mode .input-container { gap: 5px; }
 body.minimal-mode .input-container > .composer-field { min-width: 120px; flex: 1 1 120px !important; }
 body.minimal-mode .minimal-only { display: inline-flex; }
-body.minimal-mode .minimal-session { max-width: 150px; min-width: 65px; width: 14%; padding: 7px 5px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--input-bg); color: var(--text-primary); font-size: 11px; }
 body.minimal-mode #aiDock { display: none; }
 body.minimal-mode.minimal-ai-open #aiDock { display: flex; position: absolute; inset: auto 8px 8px auto; width: min(640px, calc(100% - 16px)); height: min(65%, 520px); max-width: none; max-height: none; border: 1px solid var(--border-strong); border-radius: 10px; overflow: hidden; box-shadow: 0 12px 40px var(--shadow-lg); z-index: 10; }
 body.minimal-mode #minimalAiReply.has-reply { color: var(--accent-text); border-color: var(--ai-border); }
