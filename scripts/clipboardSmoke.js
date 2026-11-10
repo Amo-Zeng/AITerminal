@@ -66,10 +66,13 @@ class CdpClient {
 
     send(method, params = {}) {
         const id = this.nextId++;
+        // Capture the caller before entering the timer so CI timeouts identify
+        // the stalled test action without logging evaluated scripts or secrets.
+        const timeoutError = new Error(`Electron CDP command timed out: ${method}`);
         return new Promise((resolve, reject) => {
             const timer = setTimeout(() => {
                 this.pending.delete(id);
-                reject(new Error(`Electron CDP command timed out: ${method}`));
+                reject(timeoutError);
             }, TIMEOUT_MS);
             this.pending.set(id, { resolve, reject, timer });
             this.socket.send(JSON.stringify({ id, method, params }));
@@ -241,7 +244,7 @@ async function runElectronSmoke(runTest, options = {}) {
         if (!ready) throw new Error('Electron renderer readiness timed out');
         await runTest({ client, evaluate });
     } catch (error) {
-        throw new Error(`${error.message}\n${output}`);
+        throw new Error(`${error.stack || error.message}\n${output}`);
     } finally {
         client?.close();
         await terminateProcessTree(child);
