@@ -3512,15 +3512,10 @@
 	                // 显示结果消息
 	                ownerTabInfo.terminal.write(`\r\n\x1b[${result.success ? '32m[连接成功]' : `31m[自动连接失败: ${result.message}`}] \x1b[0m\r\n`);
 	                
-	                // 如果连接成功，聚焦终端
+	                // Connection completion updates geometry but must not take
+                    // focus from a form the user opened while connecting.
 	                if (result.success) {
 	                    scheduleFitTerminalTab(ownerTabId, { syncSsh: true });
-	                    setTimeout(() => {
-	                        if (activeTabId === ownerTabId) {
-	                            ownerTabInfo.terminal.focus();
-	                            fitTerminalTab(ownerTabId, { focus: true, syncSsh: true });
-	                        }
-	                    }, 500);
 	                } else {
 	                    if (!workspace?.pendingRemote(ownerTabId)) startLocalTerminalForTab(ownerTabId);
 	                }

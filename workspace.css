@@ -436,6 +436,7 @@ input:focus-visible,
   display: flex;
   flex-direction: column;
   padding: 10px 12px 0;
+  container: workspace / inline-size;
 }
 .workspace-toolbar {
   height: 32px;
@@ -549,6 +550,7 @@ input:focus-visible,
 .terminal-content-area {
   flex: 1 1 0;
   min-width: 0;
+  min-height: 0;
   display: flex;
   padding: 10px;
   background: transparent;
@@ -977,6 +979,7 @@ input:focus-visible,
   flex: 0 0 var(--ai-width);
   width: var(--ai-width);
   min-width: 0;
+  min-height: 0;
   max-width: 65%;
   display: flex;
 }
@@ -1162,6 +1165,20 @@ input:focus-visible,
 .plugin-tool {
   border-radius: 7px;
   box-shadow: none;
+}
+@container workspace (max-width: 760px) {
+  .workbench {
+    flex-direction: column;
+  }
+  #aiDock {
+    flex-basis: var(--ai-height, 40%);
+    width: 100%;
+    max-width: none;
+    max-height: 55%;
+  }
+  #aiDivider {
+    cursor: row-resize;
+  }
 }
 @media (max-width: 1100px) {
   #pluginDock {

@@ -115,6 +115,7 @@ runElectronSmoke(
         true,
       );
     }
+    await evaluate(`renderAiResult({response:'Appearance fixture',command:'ai'},true,activeTabId)`);
     for (const width of [1600, 1100, 800]) {
       await client.send("Emulation.setDeviceMetricsOverride", {
         width,
@@ -139,7 +140,7 @@ runElectronSmoke(
       for (const size of await evaluate(
         `([...terminalTabs.values()].filter(i=>isTabVisible(i.container.parentElement.dataset.tabId)).map(i=>({cols:i.terminal.cols,rows:i.terminal.rows})))`,
       )) {
-        assert.ok(size.cols > 2 && size.rows > 2);
+        assert.ok(size.cols >= 20 && size.rows > 2, "AI panel leaves readable terminal columns at " + width);
       }
       assert.equal(
         await evaluate(`([...terminalTabs].filter(([id])=>isTabVisible(id)).every(([,i])=>{
@@ -151,6 +152,25 @@ runElectronSmoke(
       );
       await expectCursor(remaining);
     }
+    assert.equal(
+      await evaluate(`(()=>{const terminal=document.getElementById('workspaceCanvas').getBoundingClientRect(),dock=document.getElementById('aiDock').getBoundingClientRect();
+        return workspace.aiStacked()&&dock.top>=terminal.bottom&&Math.abs(dock.width-terminal.width)<=1&&document.getElementById('aiDivider').getAttribute('aria-orientation')==='horizontal';})()`),
+      true,
+      "narrow workspace stacks AI below the terminal",
+    );
+    const beforeHeight = await evaluate(`document.getElementById('aiDock').clientHeight`);
+    await evaluate(`document.getElementById('aiDivider').focus()`);
+    await expectCursor(null);
+    await client.send("Input.dispatchKeyEvent", {type:"keyDown",key:"ArrowUp",code:"ArrowUp"});
+    await client.send("Input.dispatchKeyEvent", {type:"keyUp",key:"ArrowUp",code:"ArrowUp"});
+    await wait(`document.getElementById('aiDock').clientHeight>${beforeHeight+10}`, "keyboard resizes stacked AI panel");
+    const handle = await evaluate(`(()=>{const r=document.getElementById('aiDivider').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,height:document.getElementById('aiDock').clientHeight};})()`);
+    await client.send("Input.dispatchMouseEvent", {type:"mousePressed",button:"left",clickCount:1,x:handle.x,y:handle.y});
+    await client.send("Input.dispatchMouseEvent", {type:"mouseMoved",button:"left",buttons:1,x:handle.x,y:handle.y-20});
+    await client.send("Input.dispatchMouseEvent", {type:"mouseReleased",button:"left",clickCount:1,x:handle.x,y:handle.y-20});
+    await wait(`document.getElementById('aiDock').clientHeight>${handle.height+10}`, "pointer resizes stacked AI panel");
+    await evaluate(`terminalTabs.get(activeTabId).terminal.focus()`);
+    await expectCursor(remaining);
     const png = fs.readFileSync(path.join(__dirname, "../build/icon.png"));
     assert.equal(png.readUInt32BE(16), 1024);
     assert.equal(png.readUInt32BE(20), 1024);
@@ -161,7 +181,7 @@ runElectronSmoke(
       true,
     );
     console.log(
-      "Appearance smoke ok: real xterm exclusive cursor, native window blur/restore, composer/modal blur, delayed fit, background blink requests, blink preference, move/zoom/close, themes, responsive layout, brand asset",
+      "Appearance smoke ok: real xterm exclusive cursor, native window blur/restore, composer/modal blur, delayed fit, background blink requests, blink preference, move/zoom/close, themes, responsive AI dock with keyboard/pointer resize, brand asset",
     );
   },
   {

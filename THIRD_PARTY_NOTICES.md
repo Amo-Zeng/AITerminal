@@ -16,6 +16,7 @@ AITerminal includes the following direct runtime dependencies. Their full licens
 | KaTeX | 0.16.22 | MIT |
 | marked | 15.0.12 | MIT |
 | node-pty | 1.1.0 | MIT |
+| Microsoft ConPTY (bundled by node-pty, Windows only) | 1.23.251008001 | MIT |
 | ssh2 | 1.16.0 | MIT |
 | semver | 7.7.4 | ISC |
 

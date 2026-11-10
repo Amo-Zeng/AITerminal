@@ -64,6 +64,7 @@ async function main() {
         '/lib/aiClient.js',
         '/lib/aiProtocol.js',
         '/lib/localEnvironment.js',
+        '/lib/nodePty.js',
         '/lib/shellCommand.js',
         '/index.html',
         '/lib/backendLease.js',
@@ -118,11 +119,15 @@ async function main() {
     }
 
     const ptyRoot = path.join(appUnpacked, 'node_modules', 'node-pty');
-    const ptyCandidates = [
-        path.join(ptyRoot, 'prebuilds', 'win32-x64', 'pty.node'),
-        path.join(ptyRoot, 'prebuilds', 'win32-x64', 'conpty.node')
-    ];
-    if (!ptyCandidates.some(existsNonEmpty)) fail('Windows x64 node-pty native module is missing from app.asar.unpacked');
+    const conptyDirs = ['build/Release', 'build/Debug', 'prebuilds/win32-x64']
+        .map(directory => path.join(ptyRoot, directory))
+        .filter(directory => existsNonEmpty(path.join(directory, 'conpty.node')));
+    if (!conptyDirs.length) fail('Windows x64 ConPTY native module is missing from app.asar.unpacked');
+    // The runtime selects bundled ConPTY. Validate both the library and its
+    // console host next to the native module in the packaged application.
+    for (const directory of conptyDirs)
+        for (const file of ['conpty.dll', 'OpenConsole.exe'])
+            if (!existsNonEmpty(path.join(directory, 'conpty', file))) fail(`bundled ConPTY runtime is missing: ${file}`);
 
     const fuseWire = await getCurrentFuseWire(exe);
     const expectedFuses = new Map([

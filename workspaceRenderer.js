@@ -135,8 +135,17 @@ window.AITerminalWorkspace = class {
       : this.layout.leaves(this.group(activeTabId)).includes(tabId);
   }
   fit() {
+    const handle = document.getElementById("aiDivider");
+    if (handle && !handle.hidden) {
+      const stacked = this.aiStacked();
+      handle.setAttribute("aria-orientation", stacked ? "horizontal" : "vertical");
+      handle.setAttribute("aria-label", stacked ? "调整 AI 面板高度" : "调整 AI 侧栏宽度");
+    }
     for (const id of terminalTabs.keys())
       if (this.visible(id)) scheduleFitTerminalTab(id, { syncSsh: true });
+  }
+  aiStacked() {
+    return getComputedStyle(document.querySelector(".workbench")).flexDirection === "column";
   }
   attachPane(id) {
     const content = getTabContent(id);
@@ -842,27 +851,24 @@ window.AITerminalWorkspace = class {
     handle.hidden = false;
     if (!handle.dataset.ready) {
       handle.dataset.ready = "true";
-      const set = (width) => {
-        const max = Math.min(
-          720,
-          document.querySelector(".workbench").clientWidth * 0.65,
+      const set = (size) => {
+        const workbench = document.querySelector(".workbench");
+        const stacked = this.aiStacked();
+        const max = stacked ? workbench.clientHeight * 0.55 : Math.min(720, workbench.clientWidth * 0.65);
+        const min = Math.min(stacked ? 120 : 240, max);
+        workbench.style.setProperty(
+          stacked ? "--ai-height" : "--ai-width",
+          Math.max(min, Math.min(max, size)) + "px",
         );
-        document
-          .querySelector(".workbench")
-          .style.setProperty(
-            "--ai-width",
-            Math.max(240, Math.min(max, width)) + "px",
-          );
         this.fit();
       };
       handle.addEventListener("pointerdown", (event) => {
         event.preventDefault();
         handle.setPointerCapture(event.pointerId);
-        const move = (e) =>
-          set(
-            document.querySelector(".workbench").getBoundingClientRect().right -
-              e.clientX,
-          );
+        const move = (e) => {
+          const rect = document.querySelector(".workbench").getBoundingClientRect();
+          set(this.aiStacked() ? rect.bottom - e.clientY : rect.right - e.clientX);
+        };
         const stop = () => {
           handle.removeEventListener("pointermove", move);
           handle.removeEventListener("lostpointercapture", stop);
@@ -871,11 +877,14 @@ window.AITerminalWorkspace = class {
         handle.addEventListener("lostpointercapture", stop);
       });
       handle.addEventListener("keydown", (event) => {
-        if (["ArrowLeft", "ArrowRight"].includes(event.key)) {
+        const stacked = this.aiStacked();
+        const keys = stacked ? ["ArrowUp", "ArrowDown"] : ["ArrowLeft", "ArrowRight"];
+        if (keys.includes(event.key)) {
           event.preventDefault();
+          const dock = document.getElementById("aiDock");
           set(
-            document.getElementById("aiDock").clientWidth +
-              (event.key === "ArrowLeft" ? 20 : -20),
+            (stacked ? dock.clientHeight : dock.clientWidth) +
+              (event.key === keys[0] ? 20 : -20),
           );
         }
       });

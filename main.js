@@ -1554,7 +1554,7 @@ function getInteractiveCtrlSequence(keyName) {
 function getNodePty() {
     if (cachedNodePty !== undefined) return cachedNodePty;
     try {
-        cachedNodePty = require('node-pty');
+        cachedNodePty = require('./lib/nodePty');
     } catch {
         cachedNodePty = null;
     }

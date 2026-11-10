@@ -91,6 +91,13 @@ async function main() {
           );
           assert.equal(result, true, "real SSH connection " + id);
         }
+        await evaluate(`commandInput.focus()`);
+        await delay(650);
+        assert.equal(
+          await evaluate(`document.activeElement===commandInput`),
+          true,
+          "SSH completion cannot steal composer focus",
+        );
         if (process.platform !== "win32") {
           await wait(`terminalTabs.get('tab-1').localTerminalActive`);
           const command = "printf '%s%s\\n' 'LOCAL_' 'ONLY'\r";

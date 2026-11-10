@@ -46,6 +46,13 @@ async function main() {
     } else outer = await createWorkspaceSshServer("OUTER");
     await runElectronSmoke(
       async ({ evaluate, client }) => {
+        // Windows headless desktops may start at 800x600 regardless of the
+        // requested native window size. Keep screen-content assertions at the
+        // app's default viewport; appearanceSmoke covers narrow layouts.
+        await client.send("Emulation.setDeviceMetricsOverride", {
+          width: 1400, height: 900, deviceScaleFactor: 1, mobile: false,
+        });
+        await evaluate(`workspace.fit()`);
         const wait = async (check, label) => {
           const until = Date.now() + 20000;
           do {
@@ -110,6 +117,13 @@ async function main() {
           await wait(
             () => evaluate(`(${text("tab-1")}).includes('INNER$')`),
             "nested SSH shell",
+          );
+        } else {
+          // A successful SSH channel handshake does not mean xterm has parsed
+          // its first output frame. Capture only after the fixture is visible.
+          await wait(
+            () => evaluate(`(${text("tab-1")}).includes('OUTER_READY')`),
+            "SSH greeting rendered before screen capture",
           );
         }
         const baselineExec = outer.exec?.length || 0;

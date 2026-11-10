@@ -10,7 +10,7 @@ function finish(code, message) {
 app.whenReady().then(() => {
     let pty;
     try {
-        pty = require('node-pty');
+        pty = require('../lib/nodePty');
     } catch (error) {
         finish(1, `node-pty load failed in Electron: ${error.message}`);
         return;

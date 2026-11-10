@@ -9,7 +9,9 @@ All notable changes to AITerminal will be documented here.
 - Applied the supplied `beauty.html` design to the live workspace: cyan/indigo accents, translucent chrome, rounded terminal cards, an AI composer card, a full-height plugin dock and consistent SVG controls in dark/light themes.
 - Replaced the application logo and Windows/macOS/Linux icons with the new gradient `A>` mark. Keep `build/icon.svg` as the source and regenerate PNG/ICO/ICNS with `npm run icons:generate`; no external fonts or network dependencies are needed. Explicitly package the runtime SVG/PNG assets so the build-resource exclusion cannot remove the in-app logo.
 - Show the xterm cursor only in the actual focused terminal, respecting the user's blink setting. AI inputs, dialogs and inactive native windows clear terminal cursor focus; background terminal cursor requests cannot enable blinking. Restore focus only to the original input owner after moving or closing panes.
-- Removed delayed focus from resize callbacks and placed xterm in an unpadded grid host so card padding does not inflate reported dimensions or clip glyphs. Real tmux resize and rendering regressions pass.
+- Removed delayed focus from resize and SSH completion callbacks and placed xterm in an unpadded grid host so card padding does not inflate reported dimensions or clip glyphs. Real tmux resize and rendering regressions pass.
+- Stack the AI result panel below terminals in narrow workspaces, with matching pointer/keyboard resize controls, so the side panel cannot squeeze splits to a few columns.
+- Use node-pty's bundled ConPTY for Windows terminals, AI sessions and plugins to avoid main-thread stalls when closing a terminal during startup/output. Verify the bundled library and console host in Windows packages; native Windows/WSL environment and focus checks pass.
 - Added cross-platform appearance checks for rendered cursor exclusivity, native-window blur/restore, dialogs, composer focus, pane lifecycle, themes and viewport sizes. Package-source verification now includes the new SVG and PNG branding assets.
 
 ## 1.7.0 - 2026-11-09

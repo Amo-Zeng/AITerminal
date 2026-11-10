@@ -11,7 +11,7 @@ async function waitFor(check, label) {
     throw new Error(`Timed out: ${label}`);
 }
 async function main() {
-    const pty = require('node-pty');
+    const pty = require('../lib/nodePty');
     const environment = createLocalEnvironment();
     const launch = terminalLaunch(environment);
     const terminal = pty.spawn(launch.file, launch.args, { name: 'xterm-256color', cols: 100, rows: 30, cwd: launch.cwd, env: environment.env });
