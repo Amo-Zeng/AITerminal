@@ -172,6 +172,7 @@ const electronApiBootstrap = `(() => {
         },
         tabActivate: asyncSuccess,
         setActiveTab: () => true,
+        setWindowMinimalMode: asyncSuccess,
         onSshOutput: () => {},
         onSshDisconnected: () => {},
         onAiTakeoverUpdate: () => {},
@@ -418,9 +419,10 @@ async function main() {
     try {
         const page = await waitForPage(port, child);
         client = await CdpClient.connect(page.webSocketDebuggerUrl);
+        await client.send('Page.enable');
         await client.send('Page.addScriptToEvaluateOnNewDocument', { source: electronApiBootstrap });
         await client.send('Page.navigate', { url: pageUrl });
-        await waitForExpression(client, "document.readyState === 'complete' && typeof createSSHModal === 'function'");
+        await waitForExpression(client, "document.readyState === 'complete' && typeof createSSHModal === 'function' && typeof workspace === 'object' && workspace !== null");
         await client.send('Runtime.evaluate', { expression: electronApiBootstrap });
         const evaluation = await client.send('Runtime.evaluate', {
             expression: modalSmokeExpression,
